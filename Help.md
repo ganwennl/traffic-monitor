@@ -1,12 +1,14 @@
 **简体中文 | [English](./Help_en-us.md)**
 
-# 独立维护版使用帮助
+# 个人版使用帮助
 
-本帮助适用于本仓库发布的 Windows x64 Lite。初次使用请完整解压 Releases 的便携 ZIP，再运行 `TrafficMonitor.exe`。更新完全手动；版本来源、安装步骤与许可见 [README](./README.md)。
+本帮助适用于本仓库发布的 Windows x64 Lite。初次使用请完整解压 Releases 的便携 ZIP，再运行 `TrafficMonitor.exe`。版本来源、安装步骤与许可见 [README](./README.md)。
 
 ## 如何更新？
 
-核对 Releases 中的版本和 SHA256，在菜单中退出旧程序后只替换 `TrafficMonitor.exe`，保留 `config.ini`、`global_cfg.ini`、`skins`、`history_traffic.dat` 及其 `.bak`。不要用完整包中的默认配置覆盖旧配置。便携模式的数据位于程序目录；AppData 模式请查看“选项”中的实际保存位置。不要把上游版本当作此维护版的更新。
+启动时会自动检查[本仓库 Releases](https://github.com/ganwennl/traffic-monitor/releases)，也可以在右键菜单中手动检查或关闭自动检查。有新版本会提醒，确认后打开下载页。检查失败不会打断正常显示。
+
+核对版本和 SHA256，在菜单中退出旧程序后只替换 `TrafficMonitor.exe`，保留 `config.ini`、`global_cfg.ini`、`skins`、`history_traffic.dat` 及其 `.bak`。不要用完整包中的默认配置覆盖旧配置。便携模式的数据位于程序目录；AppData 模式请查看“选项”中的实际保存位置。个人版的更新以本仓库为准。
 
 ## 查看哪个程序正在使用网络
 
@@ -54,4 +56,4 @@ Lite 在当前用户的 `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVer
 
 ## 程序崩溃或插件问题
 
-先退出程序，暂时移开自行添加的 `plugins` DLL 后重试。发布包不附带插件，也不提供插件在线更新。在本仓库 Issues 记录程序版本、复现步骤、错误提示和必要配置；提交前移除私人信息。上游作者不是此维护版本的支持入口。
+先退出程序，暂时移开自行添加的 `plugins` DLL 后重试。发布包不附带插件，也不提供插件在线更新。有问题请在本仓库 Issues 记录程序版本、复现步骤、错误提示和必要配置；提交前移除私人信息。这个个人版的修改请在这里反馈。

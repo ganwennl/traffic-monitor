@@ -1,12 +1,14 @@
 **[简体中文](./Help.md) | English**
 
-# Independent Edition Help
+# Personal Edition Help
 
-This help applies to this repository's Windows x64 Lite release. For a fresh installation, extract the entire portable ZIP from Releases, then run `TrafficMonitor.exe`. Updates are manual. See [README](./README_en-us.md) for installation, origin and licenses.
+This help applies to this repository's Windows x64 Lite release. For a fresh installation, extract the entire portable ZIP from Releases, then run `TrafficMonitor.exe`. See [README](./README_en-us.md) for installation, origin and licenses.
 
 ## Updating
 
-Check the release version and SHA256, choose Exit in the old program's menu and replace only `TrafficMonitor.exe`. Keep `config.ini`, `global_cfg.ini`, `skins`, `history_traffic.dat` and its `.bak`. Do not replace existing settings with package defaults. Portable data lives beside the EXE; in AppData mode, check the actual location in Options. Upstream releases are not updates for this maintained edition.
+Update checks use only [this repository's Releases](https://github.com/ganwennl/traffic-monitor/releases). They run at startup; you can also check manually or turn automatic checks off in the context menu. A new version prompts you before opening the download page. Failed checks do not interrupt the normal display.
+
+Check the version and SHA256, choose Exit in the old program's menu and replace only `TrafficMonitor.exe`. Keep `config.ini`, `global_cfg.ini`, `skins`, `history_traffic.dat` and its `.bak`. Do not replace existing settings with package defaults. Portable data lives beside the EXE; in AppData mode, check the actual location in Options. Get updates for this personal edition from this repository.
 
 ## See which processes are using the network
 
@@ -54,4 +56,4 @@ The release statically links MFC/CRT. Verify that the correct executable from th
 
 ## Crashes or plug-in problems
 
-Exit the program and temporarily move manually added `plugins` DLLs aside, then retry. The release bundles no plug-ins and provides no plug-in online updater. Report the version, reproduction steps, error and necessary configuration through this repository's Issues, removing private information before sharing. The upstream author is not the support contact for this edition.
+Exit the program and temporarily move manually added `plugins` DLLs aside, then retry. The release bundles no plug-ins and provides no plug-in online updater. Report the version, reproduction steps, error and necessary configuration through this repository's Issues, removing private information before sharing. Please report issues with my changes here.

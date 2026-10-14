@@ -1,6 +1,12 @@
-# Local release history
+# Personal edition changes
 
 [简体中文](./CHANGELOG.md)
+
+## 1.86.4-personal
+
+- Renamed the program to TrafficMonitor Personal Edition. I wanted a few things for my own use, so I keep my own version with a few small changes.
+- Automatic update checks now use my repository's Releases. You can also check manually or turn them off. A new version prompts you before opening the download page.
+- Existing settings, skins and traffic history are kept. Updating still only requires replacing the EXE.
 
 ## 1.86.3-local
 
@@ -10,16 +16,16 @@
 - The first public portable package includes all bundled skins, Chinese/English setup and usage instructions, licenses, source input hashes and SHA256 checksums. Fresh settings request extra permission only after user action; existing installations retain their settings.
 - Added repository-local `build.ps1` for x64 Lite builds from the current tree or a source archive. Original source is preserved; encoding normalization and build-time generation occur only in a temporary copy.
 
-## 1.86.2-local (internal maintenance version)
+## 1.86.2-local (earlier local version)
 
 - Added enabled-by-default per-process traffic ranking, with upload/download rates and totals since collection started.
 - Uses native Windows ETW, with a separate collector when permission is required. Installs no driver, service or scheduled task.
 
 ## 1.86.1-local
 
-- Established independent maintenance from upstream V1.86.
+- Started my own version from the original V1.86.
 - Removed application/plug-in online update checks, update-source settings and upstream promotional links. Help, FAQ and release notes are displayed locally.
 - Standardized releases on x64 Lite with static MFC/CRT and `asInvoker` main-process privileges.
 - Retained original authorship, licenses, third-party attribution and support for existing configuration, skins and traffic history.
 
-`UpdateLog/update_log_en-us.md` contains historical upstream notes. This file describes the independently maintained versions.
+`UpdateLog/update_log_en-us.md` keeps the original project's history. This file lists changes to my version.

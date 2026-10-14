@@ -334,6 +334,7 @@ struct TaskBarSettingData : public PublicSettingData
 //选项设置中“常规设置”的数据
 struct GeneralSettingData
 {
+    bool check_update_when_start{ true }; //仅检查个人版自己的 GitHub Releases
     bool show_process_traffic{ true }; //默认显示任务栏和悬浮窗口程序流量排行榜
     bool auto_elevate_process_traffic{ true }; //采集权限不足时单独申请授权
     bool auto_run{ false };

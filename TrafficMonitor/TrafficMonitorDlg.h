@@ -27,6 +27,7 @@
 #include "HistoryTrafficFile.h"
 #include "ProcessTrafficClient.h"
 #include "ProcessTrafficPopup.h"
+#include "PersonalUpdate.h"
 
 // CTrafficMonitorDlg 对话框
 class CTrafficMonitorDlg : public CDialog
@@ -60,6 +61,9 @@ protected:
     bool m_notify_icon_version4{ false };
     CProcessTrafficClient m_process_traffic;
     CProcessTrafficPopup m_process_traffic_popup;
+    PersonalUpdate::Checker m_personal_update;
+    bool m_updates_closing{};
+    bool m_personal_update_manual{};
     bool m_process_hover_tracking{};
     CTaskBarDlg* m_tBarDlg{};     //任务栏窗口的指针
 
@@ -248,6 +252,10 @@ public:
     //afx_msg void OnTextColor();
     afx_msg void OnShowTaskBarWnd();
     afx_msg void OnAppAbout();
+    afx_msg void OnCheckPersonalUpdate();
+    afx_msg void OnAutoPersonalUpdate();
+    void StartPersonalUpdate(bool manual);
+    void PollPersonalUpdate();
     afx_msg void OnShowCpuMemory2();
     afx_msg void OnShowMainWnd();
     afx_msg void OnChangeSkin();

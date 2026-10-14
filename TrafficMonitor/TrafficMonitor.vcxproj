@@ -771,6 +771,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\PluginInterface.h" />
+    <ClInclude Include="PersonalUpdate.h" />
     <ClInclude Include="ProcessTrafficCollector.h" />
     <ClInclude Include="ProcessTrafficClient.h" />
     <ClInclude Include="ProcessTrafficPopup.h" />
@@ -873,6 +874,9 @@
     <ClInclude Include="WinVersionHelper.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="PersonalUpdate.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="ProcessTrafficCollector.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>

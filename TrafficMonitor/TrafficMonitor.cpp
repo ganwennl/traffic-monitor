@@ -102,6 +102,7 @@ void CTrafficMonitorApp::LoadConfig()
     m_main_wnd_data.m_always_on_top = ini.GetBool(_T("config"), _T("always_on_top"), true);
     m_main_wnd_data.m_lock_window_pos = ini.GetBool(_T("config"), _T("lock_window_pos"), false);
     m_general_data.show_notify_icon = ini.GetBool(_T("config"), _T("show_notify_icon"), true);
+    m_general_data.check_update_when_start = ini.GetBool(L"general", L"check_update_when_start", true);
     m_general_data.show_process_traffic = ini.GetBool(L"general", L"show_process_traffic", true);
     m_general_data.auto_elevate_process_traffic = ini.GetBool(L"general", L"auto_elevate_process_traffic", true);
     m_cfg_data.m_show_more_info = ini.GetBool(_T("config"), _T("show_cpu_memory"), false);
@@ -317,6 +318,7 @@ void CTrafficMonitorApp::SaveConfig()
     ini.WriteBool(L"config", L"always_on_top", m_main_wnd_data.m_always_on_top);
     ini.WriteBool(L"config", L"lock_window_pos", m_main_wnd_data.m_lock_window_pos);
     ini.WriteBool(L"config", L"show_notify_icon", m_general_data.show_notify_icon);
+    ini.WriteBool(L"general", L"check_update_when_start", m_general_data.check_update_when_start);
     ini.WriteBool(L"general", L"show_process_traffic", m_general_data.show_process_traffic);
     ini.WriteBool(L"general", L"auto_elevate_process_traffic", m_general_data.auto_elevate_process_traffic);
     ini.WriteBool(L"config", L"show_cpu_memory", m_cfg_data.m_show_more_info);
@@ -1243,8 +1245,8 @@ void CTrafficMonitorApp::OnHelp()
 {
     const bool chinese = m_str_table.GetLanguageInfo().bcp_47.rfind(L"zh", 0) == 0;
     AfxMessageBox(chinese
-        ? L"TrafficMonitor 本地维护版\n\n鼠标移到任务栏网速区域或悬浮小窗口，可查看程序流量排行榜。程序采集需要 Windows 管理员授权；取消后可在弹窗中再次允许。\n\n右键菜单可设置悬浮窗、任务栏显示、网络连接和历史流量。\n更新由本地维护者手动发布，程序不会检查或下载上游更新。"
-        : L"TrafficMonitor local edition\n\nHover over the taskbar speed display or floating window to view per-process traffic. Windows may request administrator permission for collection.\n\nUse the context menu to configure the floating window, taskbar display, network adapters and traffic history.\nUpdates are released manually by the local maintainer; upstream update checks and downloads are removed.",
+        ? L"TrafficMonitor 个人版\n\n鼠标移到任务栏网速区域或悬浮小窗口，可查看程序流量排行榜。程序采集需要 Windows 管理员授权；取消后可在弹窗中再次允许。\n\n右键菜单可设置悬浮窗、任务栏显示、网络连接和历史流量。\n只检查我自己的 GitHub Releases；可在右键菜单关闭启动检查或手动检查。发现更新后手动下载，保留配置和数据。"
+        : L"TrafficMonitor Personal\n\nHover over the taskbar speed display or floating window to view per-process traffic. Windows may request administrator permission for collection.\n\nUse the context menu to configure the floating window, taskbar display, network adapters and traffic history.\nUpdates are checked only from my own GitHub Releases. Use the context menu for startup or manual checking, then download and update manually, keeping settings and data.",
         MB_OK | MB_ICONINFORMATION);
 }
 
@@ -1252,8 +1254,8 @@ void CTrafficMonitorApp::OnFrequentyAskedQuestions()
 {
     const bool chinese = m_str_table.GetLanguageInfo().bcp_47.rfind(L"zh", 0) == 0;
     AfxMessageBox(chinese
-        ? L"常见问题\n\n任务栏显示：右键选择“显示任务栏窗口”。\n网速显示：在“网络连接”菜单选择使用的网卡。\n配置和皮肤沿用现有本地文件。\n此版本由本地独立维护，不连接上游更新服务。"
-        : L"Frequently asked questions\n\nTaskbar display: select Show taskbar window in the context menu.\nNetwork speed: select the active adapter in Network connections.\nExisting local settings and skins remain supported.\nThis independently maintained edition does not contact upstream update services.",
+        ? L"常见问题\n\n任务栏显示：右键选择“显示任务栏窗口”。\n网速显示：在“网络连接”菜单选择使用的网卡。\n配置和皮肤沿用现有本地文件。\n这是我自己维护的个人版，只检查我自己的 GitHub Releases。"
+        : L"Frequently asked questions\n\nTaskbar display: select Show taskbar window in the context menu.\nNetwork speed: select the active adapter in Network connections.\nExisting local settings and skins remain supported.\nThis personal version checks only my own GitHub Releases.",
         MB_OK | MB_ICONINFORMATION);
 }
 
@@ -1261,8 +1263,8 @@ void CTrafficMonitorApp::OnUpdateLog()
 {
     const bool chinese = m_str_table.GetLanguageInfo().bcp_47.rfind(L"zh", 0) == 0;
     AfxMessageBox(chinese
-        ? L"1.86.3-local\n\n任务栏网速窗口和悬浮小窗口均支持程序流量明细；托盘保留原提示。\n\n1.86.2-local\n\n默认启用程序流量排行榜，显示实时下载、上传和本次累计。\n使用 Windows 原生采集，主程序保持普通权限。\n\n1.86.1-local\n\n建立本地独立维护版本。\n移除主程序及插件更新检查、更新源设置和上游推广入口。\n帮助、常见问题和更新说明改为本地显示。\n保留原作者、许可证和第三方库归属。"
-        : L"1.86.3-local\n\nPer-process details are available on the taskbar speed display and floating window; the tray keeps its standard tip.\n\n1.86.2-local\n\nPer-process traffic ranking enabled by default, with download, upload and session totals.\nNative Windows collection uses a separate helper when permission is required.\n\n1.86.1-local\n\nIndependent local maintenance.\nRemoved application/plugin update checks, update-source settings and upstream promotional links.\nHelp, FAQ and release notes are displayed locally.\nOriginal authorship, licenses and third-party attribution are retained.",
+        ? L"1.86.4-personal\n\n个人版，只检查我自己的 GitHub Releases；可关闭启动检查或手动检查。发现更新后手动下载，保留配置与流量数据。\n\n1.86.3-local\n\n任务栏网速窗口和悬浮小窗口均支持程序流量明细；托盘保留原提示。\n\n1.86.2-local\n\n默认启用程序流量排行榜，显示实时下载、上传和本次累计。\n使用 Windows 原生采集，主程序保持普通权限。\n\n1.86.1-local\n\n开始维护我自己使用的版本。\n移除主程序及插件更新检查、更新源设置和上游推广入口。\n帮助、常见问题和更新说明改为本地显示。\n保留原作者、许可证和第三方库归属。"
+        : L"1.86.4-personal\n\nPersonal edition. Checks only my own GitHub Releases; startup checking can be turned off, and manual checking remains available. Download and update manually, keeping settings and traffic history.\n\n1.86.3-local\n\nPer-process details are available on the taskbar speed display and floating window; the tray keeps its standard tip.\n\n1.86.2-local\n\nPer-process traffic ranking enabled by default, with download, upload and session totals.\nNative Windows collection uses a separate helper when permission is required.\n\n1.86.1-local\n\nStarted keeping my own version for personal use.\nRemoved application/plugin update checks, update-source settings and upstream promotional links.\nHelp, FAQ and release notes are displayed locally.\nOriginal authorship, licenses and third-party attribution are retained.",
         MB_OK | MB_ICONINFORMATION);
 }
 

@@ -349,6 +349,9 @@
     <ClInclude Include="WinVersionHelper.h">
       <Filter>源文件和头文件\公共的类\WinVersionHelper</Filter>
     </ClInclude>
+    <ClInclude Include="PersonalUpdate.h">
+      <Filter>源文件和头文件</Filter>
+    </ClInclude>
     <ClInclude Include="ProcessTrafficCollector.h">
       <Filter>源文件和头文件</Filter>
     </ClInclude>
@@ -647,6 +650,9 @@
     </ClCompile>
     <ClCompile Include="WinVersionHelper.cpp">
       <Filter>源文件和头文件\公共的类\WinVersionHelper</Filter>
+    </ClCompile>
+    <ClCompile Include="PersonalUpdate.cpp">
+      <Filter>源文件和头文件</Filter>
     </ClCompile>
     <ClCompile Include="ProcessTrafficCollector.cpp">
       <Filter>源文件和头文件</Filter>

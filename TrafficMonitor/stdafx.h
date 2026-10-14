@@ -89,6 +89,7 @@ using std::ofstream;
 #define RESTART_TASKBAR_TIMER 1240
 #define INIT_CONNECT_TIMER 1241
 #define DPI_CHANGE_TIMER 1242
+#define PERSONAL_UPDATE_TIMER 1243
 
 #define MAX_INSERT_TO_TASKBAR_CNT 200     //尝试嵌入任务栏的最大次数
 #define WARN_INSERT_TO_TASKBAR_CNT 20     //尝试嵌入任务栏的警告次数
@@ -96,7 +97,7 @@ using std::ofstream;
 #define APP_NAME _T("TrafficMonitor")
 #define TASKBAR_WINDOW_NAME _T("TrafficMonitorTaskbarWindow")
 #define APP_CLASS_NAME _T("TrafficMonitor_r7XZaS4p") //程序主窗口的类名
-#define VERSION L"1.86.3-local"
+#define VERSION L"1.86.4-personal"
 #define COPYRITE_YEAR L"2017-2026"
 
 #define MAX_NOTIFY_ICON 6       //可选的通知区图标数量

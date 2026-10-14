@@ -4,11 +4,11 @@
 
 Original author / 原作者: **zhongyang219 (Zhong Yang)**.
 
-This independently modified edition derives from TrafficMonitor V1.86, historical source commit `02a817a069bac6bf4d263b5209d9c1b07fe2f950`. Original source: <https://github.com/zhongyang219/TrafficMonitor>.
+This personal edition is based on TrafficMonitor V1.86, historical source commit `02a817a069bac6bf4d263b5209d9c1b07fe2f950`. Original source: <https://github.com/zhongyang219/TrafficMonitor>.
 
-The unchanged `LICENSE` (Anti 996 License v1.0 Draft) and `LICENSE_CN` are included. Source copyright notices are preserved; the maintained release uses the `-local` suffix.
+The unchanged `LICENSE` (Anti 996 License v1.0 Draft) and `LICENSE_CN` are included. Source copyright notices are preserved. New personal edition releases use the `-personal` suffix.
 
-本版本为有独立修改的派生版本。保留原始许可证与作者声明，未将原作者的程序宣称为自行原创。
+这个个人版基于原版做了一些修改，保留原始许可证和作者声明。
 
 ## TinyXML2
 

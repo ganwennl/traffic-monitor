@@ -92,6 +92,8 @@ BEGIN_MESSAGE_MAP(CTrafficMonitorDlg, CDialog)
     ON_COMMAND(ID_MOUSE_PENETRATE, &CTrafficMonitorDlg::OnMousePenetrate)
     ON_COMMAND(ID_SHOW_TASK_BAR_WND, &CTrafficMonitorDlg::OnShowTaskBarWnd)
     ON_COMMAND(ID_APP_ABOUT, &CTrafficMonitorDlg::OnAppAbout)
+    ON_COMMAND(ID_CHECK_PERSONAL_UPDATE, &CTrafficMonitorDlg::OnCheckPersonalUpdate)
+    ON_COMMAND(ID_AUTO_PERSONAL_UPDATE, &CTrafficMonitorDlg::OnAutoPersonalUpdate)
     ON_COMMAND(ID_SHOW_CPU_MEMORY2, &CTrafficMonitorDlg::OnShowCpuMemory2)
     ON_COMMAND(ID_SHOW_MAIN_WND, &CTrafficMonitorDlg::OnShowMainWnd)
     ON_COMMAND(ID_CHANGE_SKIN, &CTrafficMonitorDlg::OnChangeSkin)
@@ -1133,7 +1135,7 @@ BOOL CTrafficMonitorDlg::OnInitDialog()
     SetIcon(m_hIcon, FALSE);        // 设置小图标
 
     // TODO: 在此添加额外的初始化代码
-    SetWindowText(APP_NAME);
+    SetWindowText(theApp.m_str_table.LoadText(L"TXT_PERSONAL_APP_NAME").c_str());
     //设置隐藏任务栏图标
     ModifyStyleEx(WS_EX_APPWINDOW, WS_EX_TOOLWINDOW);
 
@@ -1241,6 +1243,7 @@ BOOL CTrafficMonitorDlg::OnInitDialog()
         SetTransparency(0);
 
     SetTimer(TASKBAR_TIMER, 100, NULL);
+    if (theApp.m_general_data.check_update_when_start) StartPersonalUpdate(false);
 
     return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -1674,6 +1677,7 @@ void CTrafficMonitorDlg::ExitMonitorThread()
 
 void CTrafficMonitorDlg::OnTimer(UINT_PTR nIDEvent)
 {
+    if (nIDEvent == PERSONAL_UPDATE_TIMER) { PollPersonalUpdate(); return; }
     // TODO: 在此添加消息处理程序代码和/或调用默认值
     if (nIDEvent == MONITOR_TIMER)
     {
@@ -2239,6 +2243,9 @@ void CTrafficMonitorDlg::OnTransparency40()
 
 void CTrafficMonitorDlg::OnClose()
 {
+    m_updates_closing = true;
+    KillTimer(PERSONAL_UPDATE_TIMER);
+    m_personal_update.Stop();
     // TODO: 在此添加消息处理程序代码和/或调用默认值
     theApp.m_cannot_save_config_warning = true;
     theApp.m_cannot_save_global_config_warning = true;
@@ -2323,6 +2330,7 @@ void CTrafficMonitorDlg::OnInitMenu(CMenu* pMenu)
     // TODO: 在此处添加消息处理程序代码
     m_menu_popuped = true;
 
+    pMenu->CheckMenuItem(ID_AUTO_PERSONAL_UPDATE, MF_BYCOMMAND | (theApp.m_general_data.check_update_when_start ? MF_CHECKED : MF_UNCHECKED));
     pMenu->CheckMenuItem(ID_ALWAYS_ON_TOP, MF_BYCOMMAND | (theApp.m_main_wnd_data.m_always_on_top ? MF_CHECKED : MF_UNCHECKED));
     pMenu->CheckMenuItem(ID_LOCK_WINDOW_POS, MF_BYCOMMAND | (theApp.m_main_wnd_data.m_lock_window_pos ? MF_CHECKED : MF_UNCHECKED));
     pMenu->CheckMenuItem(ID_SHOW_CPU_MEMORY, MF_BYCOMMAND | (theApp.m_cfg_data.m_show_more_info ? MF_CHECKED : MF_UNCHECKED));
@@ -2545,6 +2553,9 @@ void CTrafficMonitorDlg::OnShowNotifyIcon()
 
 void CTrafficMonitorDlg::OnDestroy()
 {
+    m_updates_closing = true;
+    KillTimer(PERSONAL_UPDATE_TIMER);
+    m_personal_update.Stop();
     m_process_traffic_popup.Hide();
     if (m_process_traffic_popup.GetSafeHwnd() != nullptr)
         m_process_traffic_popup.DestroyWindow();
@@ -2662,6 +2673,59 @@ void CTrafficMonitorDlg::OnShowTaskBarWnd()
     theApp.SaveConfig();
 }
 
+
+void CTrafficMonitorDlg::StartPersonalUpdate(bool manual)
+{
+    if (m_updates_closing) return;
+    if (m_personal_update.Running())
+    {
+        if (manual) AfxMessageBox(theApp.m_str_table.LoadText(L"TXT_PERSONAL_UPDATE_BUSY").c_str(), MB_OK | MB_ICONINFORMATION);
+        return;
+    }
+    m_personal_update_manual = manual;
+    if (!m_personal_update.Start(CCommon::UnicodeToStr(VERSION), manual) || SetTimer(PERSONAL_UPDATE_TIMER, 250, nullptr) == 0)
+    {
+        m_personal_update.Stop();
+        if (manual) AfxMessageBox(theApp.m_str_table.LoadText(L"TXT_PERSONAL_UPDATE_ERROR").c_str(), MB_OK | MB_ICONINFORMATION);
+    }
+}
+
+void CTrafficMonitorDlg::OnCheckPersonalUpdate() { StartPersonalUpdate(true); }
+
+void CTrafficMonitorDlg::OnAutoPersonalUpdate()
+{
+    theApp.m_general_data.check_update_when_start = !theApp.m_general_data.check_update_when_start;
+    if (!theApp.m_general_data.check_update_when_start && !m_personal_update_manual)
+    {
+        KillTimer(PERSONAL_UPDATE_TIMER);
+        m_personal_update.Stop();
+    }
+    theApp.SaveConfig();
+}
+
+void CTrafficMonitorDlg::PollPersonalUpdate()
+{
+    if (m_updates_closing) return;
+    PersonalUpdate::Result result;
+    if (!m_personal_update.TakeResult(result)) return;
+    KillTimer(PERSONAL_UPDATE_TIMER);
+    if (result.status == PersonalUpdate::Status::Available)
+    {
+        const std::wstring version(result.version.begin(), result.version.end());
+        const auto prompt = theApp.m_str_table.LoadTextFormat(L"TXT_PERSONAL_UPDATE_AVAILABLE", { version });
+        if (AfxMessageBox(prompt.c_str(), MB_YESNO | MB_ICONINFORMATION) == IDYES && !m_updates_closing)
+        {
+            const std::wstring page(result.releaseUrl.begin(), result.releaseUrl.end());
+            if (reinterpret_cast<INT_PTR>(ShellExecuteW(GetSafeHwnd(), L"open", page.c_str(), nullptr, nullptr, SW_SHOWNORMAL)) <= 32)
+                AfxMessageBox(theApp.m_str_table.LoadText(L"TXT_PERSONAL_UPDATE_OPEN_FAILED").c_str(), MB_OK | MB_ICONINFORMATION);
+        }
+    }
+    else if (result.manual && result.status != PersonalUpdate::Status::Cancelled)
+    {
+        const wchar_t* key = result.status == PersonalUpdate::Status::Current ? L"TXT_PERSONAL_UPDATE_CURRENT" : L"TXT_PERSONAL_UPDATE_ERROR";
+        AfxMessageBox(theApp.m_str_table.LoadText(key).c_str(), MB_OK | MB_ICONINFORMATION);
+    }
+}
 
 void CTrafficMonitorDlg::OnAppAbout()
 {
