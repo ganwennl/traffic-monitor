@@ -1,10 +1,12 @@
 **简体中文 | [English](./README_en-us.md)**
 
-# TrafficMonitor 独立维护版
+# TrafficMonitor 个人版
 
-轻量 Windows 网速与资源监视器：显示实时上传/下载、CPU、内存和历史流量，可放在悬浮窗或任务栏中，并支持皮肤及网卡选择。
+用来看网速、CPU、内存和历史流量，可以放在悬浮窗或任务栏里，也可以换皮肤、选择网卡。
 
-当前版本 **1.86.3-local · Windows x64 Lite**。本项目由 [TrafficMonitor V1.86](https://github.com/zhongyang219/TrafficMonitor) 派生，原作者为 **zhongyang219**；我们独立维护源码、编译和发布。程序及插件的在线更新已移除，更新通过本仓库 Releases 手动完成。
+由于有点个人需求，我自己维护了一个版本，修改了点小功能。原版是 [TrafficMonitor V1.86](https://github.com/zhongyang219/TrafficMonitor)，原作者是 **zhongyang219**。
+
+当前版本 **1.86.4-personal · Windows x64 Lite**。自动检查更新只使用[我这个仓库的 Releases](https://github.com/ganwennl/traffic-monitor/releases)，可以关闭。有新版本时会提醒，确认后打开下载页。
 
 ## 下载与安装
 
@@ -30,6 +32,8 @@
 
 ## 更新和数据保留
 
+启动时会自动检查本仓库的新版本，也可以在右键菜单中手动检查或关闭自动检查。程序不会自动覆盖你的文件；下载后按下面的方法更新。
+
 1. 下载新版本，并用 Releases 中的 `SHA256SUMS.txt` 检查 ZIP 校验值。
 2. 在旧程序菜单中选择“退出”，保留旧 EXE 作为回退副本。
 3. **只替换 `TrafficMonitor.exe`**；不要用新包中的 `config.ini`、`global_cfg.ini` 或整个 `skins` 覆盖旧文件。
@@ -40,10 +44,10 @@
 完整包从空配置开始，不含维护者的私人配置、历史流量或日志。校验命令：
 
 ```powershell
-Get-FileHash .\TrafficMonitor-1.86.3-local-Windows-x64-Lite-portable.zip -Algorithm SHA256
+Get-FileHash .\TrafficMonitor-1.86.4-personal-Windows-x64-Lite-portable.zip -Algorithm SHA256
 ```
 
-本地版本更新记录见 [CHANGELOG.md](./CHANGELOG.md)。历史上游记录在 `UpdateLog` 中，不能作为本地版本的更新来源。
+我的改动记在 [CHANGELOG.md](./CHANGELOG.md)。`UpdateLog` 保留原版的历史记录。
 
 ## 从源码构建
 
@@ -61,6 +65,6 @@ pwsh -File .\build.ps1 -ExecutableOnly
 
 ## 许可与反馈
 
-保留原始 [Anti 996 License](./LICENSE)、[中文版许可](./LICENSE_CN) 与源码版权声明。TinyXML2 原作者为 Lee Thomason；其许可全文及其他归属见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。本仓库包含独立修改，发布不使用上游二进制或自动更新链路。
+保留原始 [Anti 996 License](./LICENSE)、[中文版许可](./LICENSE_CN) 与源码版权声明。TinyXML2 原作者为 Lee Thomason；其许可全文及其他归属见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。这里发布的是我修改后自己编译的版本。
 
 在[本仓库 Issues](https://github.com/ganwennl/traffic-monitor/issues)反馈问题，附版本、Windows 版本和复现步骤；分享配置或截图前删除私人信息。

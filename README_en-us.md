@@ -1,10 +1,12 @@
 **[简体中文](./README.md) | English**
 
-# TrafficMonitor Independent Edition
+# TrafficMonitor Personal Edition
 
-A lightweight Windows monitor for upload/download speed, CPU, RAM and traffic history. Use a floating window or taskbar display, choose a network adapter and customize the skin.
+A Windows tool for network speed, CPU, RAM and traffic history. It can sit in a floating window or on the taskbar, with skins and network adapter selection.
 
-Current version: **1.86.3-local · Windows x64 Lite**. This independently maintained fork derives from [TrafficMonitor V1.86](https://github.com/zhongyang219/TrafficMonitor), originally written by **zhongyang219**. We maintain the source and publish our own builds. Application and plug-in online updates have been removed; updates are manual through this repository's Releases.
+I wanted a few things for my own use, so I keep my own version with a few small changes. It is based on [TrafficMonitor V1.86](https://github.com/zhongyang219/TrafficMonitor), originally written by **zhongyang219**.
+
+Current version: **1.86.4-personal · Windows x64 Lite**. Update checks use only [my repository's Releases](https://github.com/ganwennl/traffic-monitor/releases). They can be turned off. When a new version is available, the program asks before opening the download page.
 
 ## Download and install
 
@@ -30,6 +32,8 @@ Process ranking covers machine-wide TCP/UDP over IPv4/IPv6. Totals start when co
 
 ## Update without losing data
 
+The program checks this repository at startup. The context menu also lets you check manually or turn automatic checks off. It does not replace your files automatically; download the new version and follow these steps.
+
 1. Download a new release and compare its ZIP hash with the release's `SHA256SUMS.txt`.
 2. Choose Exit in the old program's menu. Keep the old EXE as a rollback copy.
 3. **Replace only `TrafficMonitor.exe`**. Do not overwrite existing `config.ini`, `global_cfg.ini` or the entire `skins` folder with package defaults.
@@ -40,10 +44,10 @@ Keep `config.ini`, `global_cfg.ini`, `history_traffic.dat`, `history_traffic.dat
 The package starts with clean settings and contains no maintainer configuration, traffic history or logs. Example hash check:
 
 ```powershell
-Get-FileHash .\TrafficMonitor-1.86.3-local-Windows-x64-Lite-portable.zip -Algorithm SHA256
+Get-FileHash .\TrafficMonitor-1.86.4-personal-Windows-x64-Lite-portable.zip -Algorithm SHA256
 ```
 
-Local release changes are in [CHANGELOG_en-us.md](./CHANGELOG_en-us.md). `UpdateLog` contains historical upstream notes, not local update instructions.
+My changes are listed in [CHANGELOG_en-us.md](./CHANGELOG_en-us.md). `UpdateLog` keeps the original project's historical notes.
 
 ## Build from source
 
@@ -61,6 +65,6 @@ The script builds a temporary copy of the current tree using `Release (lite)|x64
 
 ## Licensing and feedback
 
-The original [Anti 996 License](./LICENSE), [Chinese license](./LICENSE_CN) and source copyright notices are retained. TinyXML2 was written by Lee Thomason; its full notice and other attribution are in [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md). This modified fork does not publish upstream binaries or restore upstream automatic updates.
+The original [Anti 996 License](./LICENSE), [Chinese license](./LICENSE_CN) and source copyright notices are retained. TinyXML2 was written by Lee Thomason; its full notice and other attribution are in [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md). The downloads here are built from my modified version.
 
 Report issues through [this repository](https://github.com/ganwennl/traffic-monitor/issues), including the application version, Windows version and reproduction steps. Remove private information before sharing configuration or screenshots.
