@@ -220,10 +220,11 @@ void CProcessTrafficPopup::PositionWindow(bool show)
     const int availableHeight = (std::max)(1, workArea.Height() - gap * 2);
     const int width = (std::min)(Scale(600), availableWidth);
     const int rowHeight = (std::max)(1, Scale(30));
-    const int rowCapacity = (std::max)(0, (availableHeight - Scale(210)) / rowHeight);
+    const int baseHeight = Scale(210 + (m_data.extraSummary.empty() ? 0 : 48));
+    const int rowCapacity = (std::max)(0, (availableHeight - baseHeight) / rowHeight);
     m_visibleRows = (std::min)(m_data.rows.size(), static_cast<size_t>(rowCapacity));
     const int bodyHeight = m_data.rows.empty() ? Scale(64) : static_cast<int>(m_visibleRows) * rowHeight;
-    const int height = (std::min)(Scale(210) + bodyHeight, availableHeight);
+    const int height = (std::min)(baseHeight + bodyHeight, availableHeight);
 
     int x = m_anchorRect.right - width;
     int y = m_anchorRect.top - height - gap;
@@ -284,6 +285,8 @@ void CProcessTrafficPopup::UpdateAccessibleText()
     summary += L"，总上传 " + FormatBytes(m_data.uploadBytesPerSecond, true);
     summary += L"，CPU " + FormatUsage(m_data.cpuUsagePercent);
     summary += L"，内存 " + FormatUsage(m_data.memoryUsagePercent) + L"\r\n";
+    if (!m_data.extraSummary.empty())
+        summary += CString(m_data.extraSummary.substr(0, 512).c_str()) + L"\r\n";
     summary += CString(m_data.status.substr(0, 256).c_str());
     summary += L"\r\n所有连接 · TCP/UDP · 本次累计自采集启动\r\n";
     if (m_data.canEnable)
@@ -352,7 +355,16 @@ void CProcessTrafficPopup::DrawContent(CDC& dc, const CRect& clientRect)
     CString memory = L"内存  " + FormatUsage(m_data.memoryUsagePercent);
     text(cpu, CRect(padding, Scale(67), middle - Scale(8), Scale(83)), secondary, smallFont);
     text(memory, CRect(middle, Scale(67), right, Scale(83)), secondary, smallFont);
-    dc.FillSolidRect(padding, Scale(87), innerWidth, (std::max)(1, Scale(1)), separator);
+    const int detailsOffset = m_data.extraSummary.empty() ? 0 : 48;
+    if (detailsOffset != 0)
+    {
+        dc.SelectObject(smallFont);
+        dc.SetTextColor(secondary);
+        CRect detailsRect(padding, Scale(89), right, Scale(130));
+        dc.DrawText(CString(m_data.extraSummary.substr(0, 512).c_str()), detailsRect,
+            DT_WORDBREAK | DT_END_ELLIPSIS | DT_NOPREFIX);
+    }
+    dc.FillSolidRect(padding, Scale(87 + detailsOffset), innerWidth, (std::max)(1, Scale(1)), separator);
 
     const CString status = m_data.status.empty()
         ? CString(m_data.canEnable ? L"尚未启用程序流量统计" : L"所有连接 · TCP/UDP · 本次累计自采集启动")
@@ -360,17 +372,17 @@ void CProcessTrafficPopup::DrawContent(CDC& dc, const CRect& clientRect)
     m_enableRect.SetRectEmpty();
     if (m_data.canEnable)
     {
-        text(status, CRect(padding, Scale(93), right, Scale(110)), secondary, smallFont);
-        m_enableRect = CRect(padding, Scale(110), right, Scale(134));
+        text(status, CRect(padding, Scale(93 + detailsOffset), right, Scale(110 + detailsOffset)), secondary, smallFont);
+        m_enableRect = CRect(padding, Scale(110 + detailsOffset), right, Scale(134 + detailsOffset));
         text(L"点击允许程序流量统计", m_enableRect, accent, bodyFont);
         if (m_enableHovered)
-            dc.FillSolidRect(padding, Scale(133), (std::min)(innerWidth, Scale(166)), (std::max)(1, Scale(1)), accent);
+            dc.FillSolidRect(padding, Scale(133 + detailsOffset), (std::min)(innerWidth, Scale(166)), (std::max)(1, Scale(1)), accent);
     }
     else
     {
         dc.SelectObject(bodyFont);
         dc.SetTextColor(secondary);
-        CRect statusRect(padding, Scale(95), right, Scale(134));
+        CRect statusRect(padding, Scale(95 + detailsOffset), right, Scale(134 + detailsOffset));
         dc.DrawText(status, statusRect, DT_WORDBREAK | DT_END_ELLIPSIS | DT_NOPREFIX);
     }
 
@@ -378,8 +390,8 @@ void CProcessTrafficPopup::DrawContent(CDC& dc, const CRect& clientRect)
     const int downloadRight = nameRight + innerWidth * 18 / 100;
     const int uploadRight = downloadRight + innerWidth * 18 / 100;
     const int columnGap = Scale(10);
-    const int headerTop = Scale(141);
-    const int bodyTop = Scale(164);
+    const int headerTop = Scale(141 + detailsOffset);
+    const int bodyTop = Scale(164 + detailsOffset);
     text(L"程序（PID）", CRect(padding, headerTop, nameRight - columnGap, bodyTop - Scale(5)), secondary, smallFont);
     text(L"下载", CRect(nameRight, headerTop, downloadRight - columnGap, bodyTop - Scale(5)), secondary, smallFont, DT_RIGHT);
     text(L"上传", CRect(downloadRight, headerTop, uploadRight - columnGap, bodyTop - Scale(5)), secondary, smallFont, DT_RIGHT);

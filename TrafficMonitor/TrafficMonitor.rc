@@ -156,8 +156,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,8,6,2
- PRODUCTVERSION 1,8,6,2
+ FILEVERSION 1,8,6,3
+ PRODUCTVERSION 1,8,6,3
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -174,12 +174,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "By ZhongYang"
             VALUE "FileDescription", "Traffic Monitor"
-            VALUE "FileVersion", "1.86.2-local"
+            VALUE "FileVersion", "1.86.3-local"
             VALUE "InternalName", "TrafficMonitor.exe"
             VALUE "LegalCopyright", "By ZhongYang. All rights reserved."
             VALUE "OriginalFilename", "TrafficMonitor.exe"
             VALUE "ProductName", "TrafficMonitor"
-            VALUE "ProductVersion", "1.86.2-local"
+            VALUE "ProductVersion", "1.86.3-local"
         END
     END
     BLOCK "VarFileInfo"

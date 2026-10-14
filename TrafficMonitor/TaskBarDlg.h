@@ -146,6 +146,7 @@ protected:
     bool m_taskbar_on_top_or_bottom{ true };		//如果任务栏在屏幕顶部或底部，则为ture
     int m_error_code{};
     bool m_menu_popuped{ false };               //指示当前是否有菜单处于弹出状态
+    bool m_process_traffic_tracking{ false };   //已注册任务栏程序流量悬停/离开跟踪
     bool m_is_secondary_display{ false };       //是否显示在副显示器中
     bool m_is_width_changed{ false };
 
@@ -159,6 +160,8 @@ protected:
     //is_scendary_display：找到的是否为副显示器的任务栏
     HWND FindTaskbarHandle(bool& is_scendary_display);
     CString GetMouseTipsInfo();		//获取鼠标提示
+    void CancelProcessTrafficHover(bool hidePopup = true);
+    virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam) override;
 
     void AddHisToList(CommonDisplayItem item_type, int current_usage_percent);		//将当前利用率数值添加进链表
 
@@ -220,6 +223,8 @@ public:
     virtual BOOL PreTranslateMessage(MSG* pMsg);
     //afx_msg void OnSetFont();
     afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+    afx_msg void OnMouseHover(UINT nFlags, CPoint point);
+    afx_msg void OnMouseLeave();
     afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
     afx_msg void OnTimer(UINT_PTR nIDEvent);
     virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);

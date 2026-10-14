@@ -98,6 +98,8 @@ BEGIN_MESSAGE_MAP(CTrafficMonitorDlg, CDialog)
     ON_REGISTERED_MESSAGE(m_WM_TASKBARCREATED, &CTrafficMonitorDlg::OnTaskBarCreated)
     ON_COMMAND(ID_TRAFFIC_HISTORY, &CTrafficMonitorDlg::OnTrafficHistory)
     ON_WM_MOUSEMOVE()
+    ON_WM_MOUSEHOVER()
+    ON_WM_MOUSELEAVE()
     ON_WM_LBUTTONDBLCLK()
     ON_COMMAND(ID_OPTIONS, &CTrafficMonitorDlg::OnOptions)
     ON_COMMAND(ID_OPTIONS2, &CTrafficMonitorDlg::OnOptions2)
@@ -620,10 +622,7 @@ void CTrafficMonitorDlg::DeleteNotifyIcon()
 void CTrafficMonitorDlg::RegisterNotifyIcon()
 {
     m_notify_icon_version4 = false;
-    if (theApp.m_general_data.show_process_traffic)
-        m_ntIcon.uFlags &= ~NIF_SHOWTIP;
-    else
-        m_ntIcon.uFlags |= NIF_SHOWTIP;
+    m_ntIcon.uFlags |= NIF_SHOWTIP;
     if (::Shell_NotifyIcon(NIM_ADD, &m_ntIcon))
     {
         m_ntIcon.uVersion = NOTIFYICON_VERSION_4;
@@ -646,6 +645,27 @@ void CTrafficMonitorDlg::UpdateProcessTrafficPopup()
     display.downloadBytesPerSecond = sample.downloadBytesPerSecond;
     display.cpuUsagePercent = theApp.m_cpu_usage;
     display.memoryUsagePercent = theApp.m_memory_usage;
+    CString summary;
+    summary.Format(L"今日网卡流量 %s（上传 %s / 下载 %s）\n内存 %s / %s",
+        CCommon::DataSizeToString(theApp.m_today_up_traffic + theApp.m_today_down_traffic).GetString(),
+        CCommon::DataSizeToString(theApp.m_today_up_traffic).GetString(),
+        CCommon::DataSizeToString(theApp.m_today_down_traffic).GetString(),
+        CCommon::KBytesToString(theApp.m_used_memory).GetString(),
+        CCommon::KBytesToString(theApp.m_total_memory).GetString());
+    if (theApp.m_cpu_freq >= 0)
+        summary += L" · CPU " + CCommon::FreqToString(theApp.m_cpu_freq, theApp.m_main_wnd_data);
+    CString detail;
+    if (theApp.m_gpu_usage >= 0)
+    {
+        detail.Format(L" · 显卡 %d%%", theApp.m_gpu_usage);
+        summary += detail;
+    }
+    if (theApp.m_hdd_usage >= 0)
+    {
+        detail.Format(L" · 磁盘 %.0f%%", static_cast<double>(theApp.m_hdd_usage));
+        summary += detail;
+    }
+    display.extraSummary = summary.GetString();
     display.status = sample.status;
     display.canEnable = sample.canEnable;
     if (sample.dataLost)
@@ -654,6 +674,27 @@ void CTrafficMonitorDlg::UpdateProcessTrafficPopup()
         display.rows.push_back({ row.name, row.pid, row.uploadBytesPerSecond,
             row.downloadBytesPerSecond, row.totalBytes });
     m_process_traffic_popup.SetData(display);
+}
+
+void CTrafficMonitorDlg::ShowProcessTrafficPopup(const CRect& anchor)
+{
+    if (!theApp.m_general_data.show_process_traffic || m_menu_popuped || !IsWindow(m_hWnd))
+        return;
+    if (!m_process_traffic_popup.Create(this))
+        return;
+    m_tool_tips.Pop();
+    UpdateProcessTrafficPopup();
+    m_process_traffic_popup.ShowAt(anchor);
+}
+
+void CTrafficMonitorDlg::RequestHideProcessTrafficPopup()
+{
+    m_process_traffic_popup.RequestHide();
+}
+
+void CTrafficMonitorDlg::HideProcessTrafficPopup()
+{
+    m_process_traffic_popup.Hide();
 }
 
 LRESULT CTrafficMonitorDlg::OnEnableProcessTraffic(WPARAM, LPARAM)
@@ -2334,9 +2375,14 @@ BOOL CTrafficMonitorDlg::PreTranslateMessage(MSG* pMsg)
     if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_ESCAPE) return TRUE;
     if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_RETURN) return TRUE;
 
-    if (theApp.m_main_wnd_data.show_tool_tip && m_tool_tips.GetSafeHwnd())
+    if (m_tool_tips.GetSafeHwnd())
     {
-        m_tool_tips.RelayEvent(pMsg);
+        const bool legacyTips = theApp.m_main_wnd_data.show_tool_tip && !theApp.m_general_data.show_process_traffic;
+        m_tool_tips.Activate(legacyTips);
+        if (legacyTips)
+            m_tool_tips.RelayEvent(pMsg);
+        else
+            m_tool_tips.Pop();
     }
 
     if (pMsg->message == WM_KEYDOWN)
@@ -2385,29 +2431,6 @@ void CTrafficMonitorDlg::OnMove(int x, int y)
 afx_msg LRESULT CTrafficMonitorDlg::OnNotifyIcon(WPARAM wParam, LPARAM lParam)
 {
     const UINT notification = m_notify_icon_version4 ? LOWORD(lParam) : static_cast<UINT>(lParam);
-    if (notification == NIN_POPUPOPEN && theApp.m_general_data.show_process_traffic && !m_menu_popuped)
-    {
-        UpdateProcessTrafficPopup();
-        NOTIFYICONIDENTIFIER icon{};
-        icon.cbSize = sizeof(icon);
-        icon.hWnd = m_hWnd;
-        icon.uID = m_ntIcon.uID;
-        RECT rect{};
-        if (SUCCEEDED(::Shell_NotifyIconGetRect(&icon, &rect)))
-            m_process_traffic_popup.ShowAt(CRect(rect));
-        else
-        {
-            CPoint point;
-            ::GetCursorPos(&point);
-            m_process_traffic_popup.ShowAt(point);
-        }
-        return 0;
-    }
-    if (notification == NIN_POPUPCLOSE)
-    {
-        m_process_traffic_popup.RequestHide();
-        return 0;
-    }
     if (notification == WM_LBUTTONDOWN || notification == NIN_SELECT || notification == NIN_KEYSELECT
         || notification == WM_RBUTTONUP || notification == WM_CONTEXTMENU || notification == WM_LBUTTONDBLCLK)
         m_process_traffic_popup.Hide();
@@ -2718,9 +2741,56 @@ void CTrafficMonitorDlg::OnTrafficHistory()
 
 void CTrafficMonitorDlg::OnMouseMove(UINT nFlags, CPoint point)
 {
-    // TODO: 在此添加消息处理程序代码和/或调用默认值
-
+    const UINT buttonFlags = MK_LBUTTON | MK_RBUTTON | MK_MBUTTON | MK_XBUTTON1 | MK_XBUTTON2;
+    if (theApp.m_general_data.show_process_traffic && theApp.m_main_wnd_data.show_tool_tip
+        && !m_menu_popuped && (nFlags & buttonFlags) == 0)
+    {
+        if (!m_process_hover_tracking)
+        {
+            TRACKMOUSEEVENT tracking{ sizeof(TRACKMOUSEEVENT), TME_HOVER | TME_LEAVE, m_hWnd, 400 };
+            m_process_hover_tracking = !!::TrackMouseEvent(&tracking);
+        }
+    }
+    else if (m_process_hover_tracking)
+    {
+        TRACKMOUSEEVENT tracking{ sizeof(TRACKMOUSEEVENT), TME_CANCEL | TME_HOVER | TME_LEAVE, m_hWnd, 0 };
+        ::TrackMouseEvent(&tracking);
+        m_process_hover_tracking = false;
+        HideProcessTrafficPopup();
+    }
     CDialog::OnMouseMove(nFlags, point);
+}
+
+void CTrafficMonitorDlg::OnMouseHover(UINT, CPoint)
+{
+    if (!m_process_hover_tracking || !theApp.m_main_wnd_data.show_tool_tip)
+        return;
+    CRect anchor;
+    GetWindowRect(anchor);
+    ShowProcessTrafficPopup(anchor);
+}
+
+void CTrafficMonitorDlg::OnMouseLeave()
+{
+    m_process_hover_tracking = false;
+    RequestHideProcessTrafficPopup();
+}
+
+LRESULT CTrafficMonitorDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
+{
+    if (message == WM_LBUTTONDOWN || message == WM_LBUTTONDBLCLK
+        || message == WM_RBUTTONDOWN || message == WM_RBUTTONDBLCLK
+        || message == WM_MBUTTONDOWN || message == WM_XBUTTONDOWN
+        || message == WM_CONTEXTMENU || message == WM_CANCELMODE || message == WM_ENTERMENULOOP
+        || message == WM_ENTERSIZEMOVE || message == WM_CLOSE || message == WM_DESTROY
+        || (message == WM_SHOWWINDOW && !wParam))
+    {
+        TRACKMOUSEEVENT tracking{ sizeof(TRACKMOUSEEVENT), TME_CANCEL | TME_HOVER | TME_LEAVE, m_hWnd, 0 };
+        ::TrackMouseEvent(&tracking);
+        m_process_hover_tracking = false;
+        HideProcessTrafficPopup();
+    }
+    return CDialog::WindowProc(message, wParam, lParam);
 }
 
 

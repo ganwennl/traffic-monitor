@@ -23,6 +23,7 @@ public:
     {
         std::vector<Row> rows;
         std::wstring status;
+        std::wstring extraSummary;
         std::uint64_t uploadBytesPerSecond{};
         std::uint64_t downloadBytesPerSecond{};
         double cpuUsagePercent{ -1.0 };

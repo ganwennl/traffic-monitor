@@ -60,6 +60,7 @@ protected:
     bool m_notify_icon_version4{ false };
     CProcessTrafficClient m_process_traffic;
     CProcessTrafficPopup m_process_traffic_popup;
+    bool m_process_hover_tracking{};
     CTaskBarDlg* m_tBarDlg{};     //任务栏窗口的指针
 
     vector<NetWorkConection> m_connections; //保存获取到的要显示到“选择网卡”菜单项中的所有网络连接
@@ -194,6 +195,9 @@ protected:
 
 public:
     bool IsTaskbarWndValid() const;
+    void ShowProcessTrafficPopup(const CRect& anchor);
+    void RequestHideProcessTrafficPopup();
+    void HideProcessTrafficPopup();
 protected:
 
     void TaskbarShowHideItem(DisplayItem type);
@@ -230,6 +234,7 @@ public:
     virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
     afx_msg void OnInitMenu(CMenu* pMenu);
     virtual BOOL PreTranslateMessage(MSG* pMsg);
+    virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam) override;
     afx_msg void OnLockWindowPos();
     afx_msg void OnMove(int x, int y);
 protected:
@@ -250,6 +255,8 @@ public:
     //afx_msg void OnSetFont();
     afx_msg void OnTrafficHistory();
     afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+    afx_msg void OnMouseHover(UINT nFlags, CPoint point);
+    afx_msg void OnMouseLeave();
     afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
     afx_msg void OnOptions();
     afx_msg void OnOptions2();

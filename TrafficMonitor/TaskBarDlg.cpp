@@ -45,6 +45,8 @@ BEGIN_MESSAGE_MAP(CTaskBarDlg, CDialogEx)
     ON_WM_RBUTTONUP()
     ON_WM_INITMENU()
     ON_WM_MOUSEMOVE()
+    ON_WM_MOUSEHOVER()
+    ON_WM_MOUSELEAVE()
     ON_WM_LBUTTONDBLCLK()
     ON_WM_TIMER()
     ON_WM_PAINT()
@@ -805,8 +807,10 @@ void CTaskBarDlg::SetTextFont()
 
 void CTaskBarDlg::ApplySettings()
 {
+    CancelProcessTrafficHover();
     SetTextFont();
     CalculateWindowSize();
+    UpdateToolTips();
 }
 
 void CTaskBarDlg::CalculateWindowSize()
@@ -937,17 +941,30 @@ void CTaskBarDlg::CalculateWindowSize()
 
 void CTaskBarDlg::SetToolTipsTopMost()
 {
+    if (!IsWindow(m_tool_tips.GetSafeHwnd()))
+        return;
+    const bool legacyTips = !theApp.m_general_data.show_process_traffic && theApp.m_taskbar_data.show_tool_tip;
+    m_tool_tips.Activate(legacyTips);
+    if (!legacyTips)
+    {
+        m_tool_tips.Pop();
+        return;
+    }
     m_tool_tips.SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW);
 }
 
 void CTaskBarDlg::UpdateToolTips()
 {
-    if (theApp.m_taskbar_data.show_tool_tip && IsWindow(m_tool_tips.GetSafeHwnd()))
+    if (!IsWindow(m_tool_tips.GetSafeHwnd()))
+        return;
+    const bool legacyTips = !theApp.m_general_data.show_process_traffic && theApp.m_taskbar_data.show_tool_tip;
+    m_tool_tips.Activate(legacyTips);
+    if (!legacyTips)
     {
-        CString tip_info;
-        tip_info = GetMouseTipsInfo();
-        m_tool_tips.UpdateTipText(tip_info, this);
+        m_tool_tips.Pop();
+        return;
     }
+    m_tool_tips.UpdateTipText(GetMouseTipsInfo(), this);
 }
 
 bool CTaskBarDlg::IsItemShow(DisplayItem item)
@@ -1158,7 +1175,7 @@ BOOL CTaskBarDlg::PreTranslateMessage(MSG* pMsg)
     if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_ESCAPE) return TRUE;
     if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_RETURN) return TRUE;
 
-    if (theApp.m_taskbar_data.show_tool_tip && !m_menu_popuped && IsWindow(m_tool_tips.GetSafeHwnd()) && (pMsg->message == WM_LBUTTONDOWN ||
+    if (!theApp.m_general_data.show_process_traffic && theApp.m_taskbar_data.show_tool_tip && !m_menu_popuped && IsWindow(m_tool_tips.GetSafeHwnd()) && (pMsg->message == WM_LBUTTONDOWN ||
         pMsg->message == WM_LBUTTONUP ||
         pMsg->message == WM_MOUSEMOVE))
     {
@@ -1181,11 +1198,115 @@ BOOL CTaskBarDlg::PreTranslateMessage(MSG* pMsg)
     return CDialogEx::PreTranslateMessage(pMsg);
 }
 
+void CTaskBarDlg::CancelProcessTrafficHover(bool hidePopup)
+{
+    m_process_traffic_tracking = false;
+    if (IsWindow(GetSafeHwnd()))
+    {
+        TRACKMOUSEEVENT tracking{};
+        tracking.cbSize = sizeof(tracking);
+        tracking.dwFlags = TME_CANCEL | TME_HOVER | TME_LEAVE;
+        tracking.hwndTrack = GetSafeHwnd();
+        ::TrackMouseEvent(&tracking);
+    }
+    CTrafficMonitorDlg* mainWindow = CTrafficMonitorDlg::Instance();
+    if (mainWindow != nullptr && IsWindow(mainWindow->GetSafeHwnd()))
+    {
+        if (hidePopup)
+            mainWindow->HideProcessTrafficPopup();
+        else
+            mainWindow->RequestHideProcessTrafficPopup();
+    }
+}
+
+LRESULT CTaskBarDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
+{
+    // 先隐藏排行榜，再交给原来的点击、插件、菜单和销毁处理。
+    switch (message)
+    {
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONUP:
+    case WM_LBUTTONDBLCLK:
+    case WM_RBUTTONDOWN:
+    case WM_RBUTTONUP:
+    case WM_RBUTTONDBLCLK:
+    case WM_MBUTTONDOWN:
+    case WM_MBUTTONUP:
+    case WM_MBUTTONDBLCLK:
+    case WM_XBUTTONDOWN:
+    case WM_XBUTTONUP:
+    case WM_XBUTTONDBLCLK:
+    case WM_CONTEXTMENU:
+    case WM_INITMENU:
+    case WM_ENTERMENULOOP:
+    case WM_COMMAND:
+    case WM_CLOSE:
+    case WM_DESTROY:
+        CancelProcessTrafficHover();
+        break;
+    default:
+        break;
+    }
+    return CDialogEx::WindowProc(message, wParam, lParam);
+}
+
 void CTaskBarDlg::OnMouseMove(UINT nFlags, CPoint point)
 {
-    // TODO: 在此添加消息处理程序代码和/或调用默认值
-
+    const UINT buttonFlags = MK_LBUTTON | MK_RBUTTON | MK_MBUTTON | MK_XBUTTON1 | MK_XBUTTON2;
+    const bool processTips = theApp.m_general_data.show_process_traffic && theApp.m_taskbar_data.show_tool_tip;
+    if (processTips && !m_menu_popuped && (nFlags & buttonFlags) == 0)
+    {
+        if (IsWindow(m_tool_tips.GetSafeHwnd()))
+        {
+            m_tool_tips.Activate(FALSE);
+            m_tool_tips.Pop();
+        }
+        if (!m_process_traffic_tracking)
+        {
+            TRACKMOUSEEVENT tracking{};
+            tracking.cbSize = sizeof(tracking);
+            tracking.dwFlags = TME_HOVER | TME_LEAVE;
+            tracking.hwndTrack = GetSafeHwnd();
+            tracking.dwHoverTime = 400;
+            m_process_traffic_tracking = ::TrackMouseEvent(&tracking) != FALSE;
+        }
+    }
+    else
+    {
+        CancelProcessTrafficHover();
+    }
     CDialogEx::OnMouseMove(nFlags, point);
+}
+
+void CTaskBarDlg::OnMouseHover(UINT nFlags, CPoint point)
+{
+    // WM_MOUSEHOVER 消耗一次悬停注册，离开跟踪仍由系统保持。
+    const bool tracked = m_process_traffic_tracking;
+    m_process_traffic_tracking = false;
+    const UINT buttonFlags = MK_LBUTTON | MK_RBUTTON | MK_MBUTTON | MK_XBUTTON1 | MK_XBUTTON2;
+    if (tracked && theApp.m_general_data.show_process_traffic && theApp.m_taskbar_data.show_tool_tip
+        && !m_menu_popuped && (nFlags & buttonFlags) == 0 && IsWindowVisible())
+    {
+        CRect anchor;
+        GetWindowRect(&anchor);
+        CPoint cursor;
+        CTrafficMonitorDlg* mainWindow = CTrafficMonitorDlg::Instance();
+        if (::GetCursorPos(&cursor) && anchor.PtInRect(cursor)
+            && mainWindow != nullptr && IsWindow(mainWindow->GetSafeHwnd()))
+        {
+            if (IsWindow(m_tool_tips.GetSafeHwnd()))
+                m_tool_tips.Pop();
+            mainWindow->ShowProcessTrafficPopup(anchor);
+        }
+    }
+    CDialogEx::OnMouseHover(nFlags, point);
+}
+
+void CTaskBarDlg::OnMouseLeave()
+{
+    // 延迟隐藏，让鼠标可以从任务栏网速窗口移到共享排行榜中。
+    CancelProcessTrafficHover(false);
+    CDialogEx::OnMouseLeave();
 }
 
 void CTaskBarDlg::OnLButtonDblClk(UINT nFlags, CPoint point)
