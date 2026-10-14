@@ -1,12 +1,20 @@
 **[简体中文](./Help.md) | English**
 
-# Local Maintenance Edition Help
+# Independent Edition Help
 
-This help applies to the locally compiled Windows x64 Lite edition. Updates are manual; there is no online update check, update download or update-source selector. See [README](./README_en-us.md) for origin and licenses.
+This help applies to this repository's Windows x64 Lite release. For a fresh installation, extract the entire portable ZIP from Releases, then run `TrafficMonitor.exe`. Updates are manual. See [README](./README_en-us.md) for installation, origin and licenses.
 
 ## Updating
 
-Check the version and SHA256 of a new local build, exit the running program and replace only `TrafficMonitor.exe`. Retain configuration, skins and traffic data. Upstream automated releases and plug-ins are not updates for this local edition.
+Check the release version and SHA256, choose Exit in the old program's menu and replace only `TrafficMonitor.exe`. Keep `config.ini`, `global_cfg.ini`, `skins`, `history_traffic.dat` and its `.bak`. Do not replace existing settings with package defaults. Portable data lives beside the EXE; in AppData mode, check the actual location in Options. Upstream releases are not updates for this maintained edition.
+
+## See which processes are using the network
+
+Hover over the taskbar speed display or floating window for about 400 ms to see the top eight processes, their PIDs, upload/download rates and totals since collection started. The tray keeps its short tooltip. Disabling the corresponding window's tooltip also disables this popup.
+
+Fresh portable settings do not automatically request administrator authorization. If permission is needed, click the allow-collection action in the popup to authorize a separate collector through Windows. Cancelling leaves ordinary speed monitoring available. Under `[general]` in `config.ini`, `show_process_traffic=false` disables details and `auto_elevate_process_traffic=false` allows only manual permission requests. Replacing only the EXE retains existing preferences.
+
+Details cover machine-wide TCP/UDP over IPv4/IPv6 and use different accounting from the selected-adapter totals. Traffic before collection started is not included. New connections can take one refresh cycle to appear. No addresses, packet contents or ETL files are saved. Exiting the main application stops collection.
 
 ## Network speed stays at zero
 
@@ -38,12 +46,12 @@ Use a directory writable by the current user, or choose AppData storage in Data 
 
 ## Temperature, GPU or disk monitoring is unavailable
 
-The maintained release is Lite and includes no hardware-monitor DLL or kernel driver. Network speed, CPU and RAM usage need neither component.
+The release is Lite and includes no hardware-monitor DLL or kernel driver. Network speed, CPU and RAM usage need neither component.
 
 ## An MSVC or MFC DLL is reported missing
 
-The local build statically links MFC/CRT. Verify that the correct local executable is running and report the build version and error to the local maintainer. Do not replace it with a separately downloaded DLL.
+The release statically links MFC/CRT. Verify that the correct executable from this repository is running and report the version and error through this repository's Issues. Do not replace it with a separately downloaded DLL.
 
 ## Crashes or plug-in problems
 
-Exit the program and temporarily move any manually added `plugins` DLLs aside, then retry. The local build bundles no plug-ins and provides no plug-in online updater. Record the version, reproduction steps, error and necessary configuration for the local maintainer, removing private information before sharing. The upstream author is not the support contact for local changes.
+Exit the program and temporarily move manually added `plugins` DLLs aside, then retry. The release bundles no plug-ins and provides no plug-in online updater. Report the version, reproduction steps, error and necessary configuration through this repository's Issues, removing private information before sharing. The upstream author is not the support contact for this edition.
