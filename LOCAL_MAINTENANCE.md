@@ -30,9 +30,23 @@
 
 历史 `trafficmonitor_upstream_v1.86.json` 只保留原始来源依据，不能用来断言当前源码没有修改，也不再作为构建准入条件。
 
-## 手动替换
+## 固定本机成品目录
 
-验证产物后退出旧程序，只把新 `TrafficMonitor.exe` 复制到实际使用目录，核对复制前后 SHA256。保留已有配置、皮肤和历史流量数据。`-ExecutableOnly` 的输出目录仅含 EXE，证据留在 `BuildRoot`；脚本本身不会替换现有用户目录或生成压缩包。
+以后本机成品固定放在 `%USERPROFILE%\Documents\ChatGPT\TrafficMonitor\成品`，目录不加版本号，只放运行文件、离线数据库、皮肤、许可和说明。工具链、构建证据和上次回退文件放在旁边的 `%USERPROFILE%\Documents\ChatGPT\TrafficMonitor-维护`，不放进成品目录。
+
+退出正在使用的 TrafficMonitor 后，在 PowerShell 7 中执行：
+
+```powershell
+& 'D:\newcode\TrafficMonitor\publish-local.ps1'
+```
+
+脚本先使用维护目录的 `toolchain\VC\Tools\MSVC\<工具链版本>\atlmfc`，没有可用目录时沿用 `build.ps1` 的已安装 MFC 查找逻辑；也可显式指定 `-MfcRoot`。构建和完整包在维护目录 `work` 下随机隔离，始终从当前源码生成默认配置，不从个人成品复制配置到包中。
+
+发布更新 EXE、IPv4/IPv6 离线库、许可、说明和公开构建清单，并逐文件核对 SHA256。已有 `config.ini`、`global_cfg.ini`、历史数据和皮肤文件保持原样；仅补入缺少的默认配置与新皮肤文件。运行文件被占用时明确报错，保留旧文件，不关闭程序或模拟键盘输入。
+
+更新前，仅将即将替换的运行文件备份到维护目录 `rollback`，只保留上次一份，不备份个人配置；`RECOVERY.json` 记录旧文件摘要和新添加文件。每个文件以同目录临时文件原子替换；替换过程失败时恢复已修改文件，失败工作目录保留供排查。
+
+成功后，`BUILD-MANIFEST.json`、`SOURCE-INPUTS.json`、`STAGED-INPUTS.json`、`build.log` 和本机发布清单留在维护目录 `evidence\current`，清理本次隔离构建目录和临时包。供 GitHub 发布的干净完整包固定为维护目录的 `releases\TrafficMonitor-Windows-x64-Lite.zip`，仅含新构建默认配置，不含个人配置；压缩后逐文件核对字节摘要。`build.ps1 -ExecutableOnly` 继续用于只生成 EXE 的临时维护，不作为固定目录的完整交付入口。
 
 需要原版的新功能时，先审查和合并源码，再重新编译、验证，通过我这个仓库发布。
 
