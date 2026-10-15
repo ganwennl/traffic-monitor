@@ -775,6 +775,9 @@
     <ClInclude Include="ProcessTrafficCollector.h" />
     <ClInclude Include="ProcessTrafficClient.h" />
     <ClInclude Include="ProcessTrafficPopup.h" />
+    <ClInclude Include="ProcessConnections.h" />
+    <ClInclude Include="ProcessConnectionsWindow.h" />
+    <ClInclude Include="IpRegionLookup.h" />
     <ClInclude Include="AboutDlg.h" />
     <ClInclude Include="AdapterCommon.h" />
     <ClInclude Include="AppAlreadyRuningDlg.h" />
@@ -884,6 +887,13 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="ProcessTrafficPopup.cpp" />
+    <ClCompile Include="ProcessConnections.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="IpRegionLookup.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="ProcessConnectionsWindow.cpp" />
     <ClCompile Include="AboutDlg.cpp" />
     <ClCompile Include="AdapterCommon.cpp" />
     <ClCompile Include="AppAlreadyRuningDlg.cpp" />

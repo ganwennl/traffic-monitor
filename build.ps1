@@ -101,6 +101,40 @@ $historicalOrigin = [ordered]@{
 }
 $inputEntries = @(Get-FileEntries $SourceRoot)
 if ($inputEntries.Count -eq 0) { throw 'No maintained source inputs were found.' }
+$ipDatabaseSpecs = @((Get-Content -LiteralPath (Join-Path $SourceRoot 'third_party\ip2region\DATA_MANIFEST.json') -Encoding UTF8 -Raw | ConvertFrom-Json).datasets)
+if ($ipDatabaseSpecs.Count -ne 2) { throw 'Expected two offline IP database specifications.' }
+$ipDataEntries = @()
+foreach ($ipVersion in @(4, 6)) {
+    $requiredPath = "data/ip2region_v$ipVersion.xdb"
+    $spec = @($ipDatabaseSpecs | Where-Object path -eq $requiredPath)
+    if ($spec.Count -ne 1 -or $spec[0].bytes -le 0 -or $spec[0].bytes -gt 64MB -or $spec[0].sha256 -notmatch '^[a-f0-9]{64}$') {
+        throw "Invalid offline IP database specification: $requiredPath"
+    }
+    $spec = $spec[0]
+    if ($spec.PSObject.Properties['source_storage']) {
+        if ($ipVersion -ne 6 -or $spec.source_storage.format -ne 'concatenated-parts' -or $spec.source_storage.parts.Count -ne 2) {
+            throw 'Unsupported IP database source storage.'
+        }
+        $expectedOffset = 0L
+        $partNumber = 0
+        foreach ($part in $spec.source_storage.parts) {
+            $partNumber++
+            $entry = @($inputEntries | Where-Object path -eq $part.path)
+            if ($part.path -ne "$requiredPath.part$partNumber" -or $part.offset -ne $expectedOffset -or $entry.Count -ne 1 -or
+                $part.bytes -le 0 -or $part.bytes -gt 20MB -or $entry[0].bytes -ne $part.bytes -or $entry[0].sha256 -ne $part.sha256) {
+                throw 'IP database source part differs from its manifest.'
+            }
+            $expectedOffset += $part.bytes
+        }
+        if ($expectedOffset -ne $spec.bytes) { throw 'IP database parts have the wrong total size.' }
+    } else {
+        $entry = @($inputEntries | Where-Object path -eq $requiredPath)
+        if ($entry.Count -ne 1 -or $entry[0].bytes -ne $spec.bytes -or $entry[0].sha256 -ne $spec.sha256) {
+            throw "IP database differs from its manifest: $requiredPath"
+        }
+    }
+    $ipDataEntries += [ordered]@{path=$spec.path;bytes=$spec.bytes;sha256=$spec.sha256}
+}
 New-Item -ItemType Directory -Path $BuildRoot | Out-Null
 $stagedSource = Join-Path $BuildRoot 'source'
 New-Item -ItemType Directory -Path $stagedSource | Out-Null
@@ -114,6 +148,22 @@ foreach ($entry in $inputEntries) {
     if ((Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant() -ne $entry.sha256 -or
         (Get-FileHash -LiteralPath $sourceFile -Algorithm SHA256).Hash.ToLowerInvariant() -ne $entry.sha256) {
         throw "Source changed while staging or copied bytes differ: $($entry.path)"
+    }
+}
+# Restore the official IPv6 bytes from bounded source parts in the build copy only.
+foreach ($spec in $ipDatabaseSpecs) {
+    if (!$spec.PSObject.Properties['source_storage']) { continue }
+    $restoredPath = Join-Path $stagedSource $spec.path
+    $restored = [IO.File]::Open($restoredPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+    try {
+        foreach ($part in $spec.source_storage.parts) {
+            $partStream = [IO.File]::OpenRead((Join-Path $stagedSource $part.path))
+            try { $partStream.CopyTo($restored) } finally { $partStream.Dispose() }
+        }
+    } finally { $restored.Dispose() }
+    if ((Get-Item -LiteralPath $restoredPath).Length -ne $spec.bytes -or
+        (Get-FileHash -LiteralPath $restoredPath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $spec.sha256) {
+        throw 'Restored IPv6 database differs from the official bytes.'
     }
 }
 # Normalize only the disposable build copy; retain the maintained source bytes.
@@ -196,6 +246,16 @@ if ((Get-FileHash -LiteralPath $outputExe -Algorithm SHA256).Hash.ToLowerInvaria
     throw 'Copied executable bytes differ from the build output.'
 }
 if (-not $ExecutableOnly) {
+    New-Item -ItemType Directory -Path (Join-Path $OutputDir 'data') | Out-Null
+    foreach ($entry in $ipDataEntries) {
+        Copy-Item -LiteralPath (Join-Path $stagedSource $entry.path) -Destination (Join-Path $OutputDir $entry.path)
+        if ((Get-FileHash -LiteralPath (Join-Path $OutputDir $entry.path) -Algorithm SHA256).Hash.ToLowerInvariant() -ne $entry.sha256) {
+            throw "Copied IP database bytes differ: $($entry.path)"
+        }
+    }
+    $ipNotices = Join-Path $OutputDir 'third_party'
+    New-Item -ItemType Directory -Path $ipNotices | Out-Null
+    Copy-Item -LiteralPath (Join-Path $stagedSource 'third_party\ip2region') -Destination $ipNotices -Recurse
     Copy-Item -LiteralPath (Join-Path $stagedSource 'TrafficMonitor\skins') -Destination $OutputDir -Recurse
     foreach ($document in @('LICENSE', 'LICENSE_CN', 'README.md', 'README_en-us.md', 'Help.md', 'Help_en-us.md', 'CHANGELOG.md', 'CHANGELOG_en-us.md', 'THIRD_PARTY_NOTICES.md')) {
         if (Test-Path -LiteralPath (Join-Path $stagedSource $document) -PathType Leaf) {
@@ -215,6 +275,7 @@ $manifest = [ordered]@{
     buildProperties = [ordered]@{ path = $localProps; sha256 = (Get-FileHash -LiteralPath $localProps -Algorithm SHA256).Hash.ToLowerInvariant() }
     configuration = 'Release (lite)'; platform = 'x64'; mfc = 'Static'; crt = 'MultiThreaded'; uac = 'AsInvoker'
     executable = $outputExe; executableSha256 = $executableSha256; executableOnly = [bool]$ExecutableOnly
+    ipDatabases = @($ipDataEntries); ipDatabasesIncluded = !$ExecutableOnly
     buildLog = $log; buildDirectory = $BuildRoot; compiler = $vsRoot; mfcRoot = $MfcRoot; msbuild = $msbuild; msbuildArguments = $buildArgs
     builtAt = (Get-Date).ToString('o')
     notes = @('Built from the current local maintenance tree, not an unmodified upstream snapshot.', 'No network dependency restore requested.', 'No hardware-monitor DLL, kernel driver or plugin DLL bundled.')

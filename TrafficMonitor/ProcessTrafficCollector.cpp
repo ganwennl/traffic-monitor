@@ -176,6 +176,13 @@ public:
     {
         Counter value;
         value.pid = pid;
+        // Windows reserves PID 4 for System. OpenProcess cannot open it from
+        // user mode, so resolve this fixed identity without an image query.
+        if (pid == 4)
+        {
+            value.name = L"System";
+            return value;
+        }
         value.name = L"PID " + std::to_wstring(pid);
         HANDLE handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE, pid);
         bool sync = handle != nullptr;

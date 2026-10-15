@@ -27,6 +27,7 @@
 #include "HistoryTrafficFile.h"
 #include "ProcessTrafficClient.h"
 #include "ProcessTrafficPopup.h"
+#include "ProcessConnectionsWindow.h"
 #include "PersonalUpdate.h"
 
 // CTrafficMonitorDlg 对话框
@@ -61,6 +62,7 @@ protected:
     bool m_notify_icon_version4{ false };
     CProcessTrafficClient m_process_traffic;
     CProcessTrafficPopup m_process_traffic_popup;
+    CProcessConnectionsWindow m_process_connections_window;
     PersonalUpdate::Checker m_personal_update;
     bool m_updates_closing{};
     bool m_personal_update_manual{};
@@ -244,6 +246,7 @@ public:
 protected:
     afx_msg LRESULT OnNotifyIcon(WPARAM wParam, LPARAM lParam);
     afx_msg LRESULT OnEnableProcessTraffic(WPARAM wParam, LPARAM lParam);
+    afx_msg LRESULT OnProcessConnections(WPARAM pid, LPARAM lParam);
 public:
     afx_msg void OnShowNotifyIcon();
     afx_msg void OnDestroy();

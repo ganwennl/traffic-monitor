@@ -361,6 +361,15 @@
     <ClInclude Include="ProcessTrafficPopup.h">
       <Filter>源文件和头文件</Filter>
     </ClInclude>
+    <ClInclude Include="ProcessConnections.h">
+      <Filter>源文件和头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessConnectionsWindow.h">
+      <Filter>源文件和头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IpRegionLookup.h">
+      <Filter>源文件和头文件</Filter>
+    </ClInclude>
     <ClInclude Include="AboutDlg.h">
       <Filter>源文件和头文件\对话框类\AboutDlg</Filter>
     </ClInclude>
@@ -661,6 +670,15 @@
       <Filter>源文件和头文件</Filter>
     </ClCompile>
     <ClCompile Include="ProcessTrafficPopup.cpp">
+      <Filter>源文件和头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessConnections.cpp">
+      <Filter>源文件和头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessConnectionsWindow.cpp">
+      <Filter>源文件和头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IpRegionLookup.cpp">
       <Filter>源文件和头文件</Filter>
     </ClCompile>
     <ClCompile Include="AboutDlg.cpp">

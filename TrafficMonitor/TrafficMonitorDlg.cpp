@@ -86,6 +86,7 @@ BEGIN_MESSAGE_MAP(CTrafficMonitorDlg, CDialog)
     ON_WM_MOVE()
     ON_MESSAGE(MY_WM_NOTIFYICON, &CTrafficMonitorDlg::OnNotifyIcon)
     ON_MESSAGE(CProcessTrafficPopup::EnableMessage, &CTrafficMonitorDlg::OnEnableProcessTraffic)
+    ON_MESSAGE(CProcessTrafficPopup::ConnectionsMessage, &CTrafficMonitorDlg::OnProcessConnections)
     ON_COMMAND(ID_SHOW_NOTIFY_ICON, &CTrafficMonitorDlg::OnShowNotifyIcon)
     ON_WM_DESTROY()
     ON_COMMAND(ID_SHOW_CPU_MEMORY, &CTrafficMonitorDlg::OnShowCpuMemory)
@@ -703,6 +704,14 @@ LRESULT CTrafficMonitorDlg::OnEnableProcessTraffic(WPARAM, LPARAM)
 {
     if (theApp.m_general_data.show_process_traffic && m_process_traffic.TakeSnapshot().canEnable)
         m_process_traffic.Start(m_hWnd, true);
+    return 0;
+}
+
+LRESULT CTrafficMonitorDlg::OnProcessConnections(WPARAM pid, LPARAM)
+{
+    m_process_traffic_popup.Hide();
+    m_process_connections_window.ShowFor(this, static_cast<DWORD>(pid),
+        m_process_traffic_popup.NameForPid(static_cast<DWORD>(pid)));
     return 0;
 }
 

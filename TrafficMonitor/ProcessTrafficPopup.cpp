@@ -56,6 +56,8 @@ BEGIN_MESSAGE_MAP(CProcessTrafficPopup, CWnd)
     ON_WM_SETCURSOR()
     ON_WM_TIMER()
     ON_WM_DESTROY()
+    ON_WM_SETTINGCHANGE()
+    ON_WM_SYSCOLORCHANGE()
     ON_MESSAGE(WM_DPICHANGED, &CProcessTrafficPopup::OnDpiChanged)
 END_MESSAGE_MAP()
 
@@ -78,6 +80,7 @@ BOOL CProcessTrafficPopup::Create(CWnd* owner)
         return FALSE;
 
     ApplyDpi(96);
+    RefreshAppearance();
     UpdateAccessibleText();
     return TRUE;
 }
@@ -127,6 +130,7 @@ void CProcessTrafficPopup::ShowAt(const CRect& trayIconRect)
     }
     m_outside = false;
     m_enableHovered = false;
+    RefreshAppearance();
     PositionWindow(true);
     SetTimer(TrackingTimer, 150, nullptr);
     Invalidate(FALSE);
@@ -182,6 +186,8 @@ void CProcessTrafficPopup::ApplyDpi(UINT dpi)
     else
         wcscpy_s(font.lfFaceName, L"Microsoft YaHei UI");
     font.lfWidth = 0;
+    // 固定使用 UI 字体，避免中文回退成宋体而与数字、英文风格不一致。
+    wcscpy_s(font.lfFaceName, L"Microsoft YaHei UI");
     font.lfHeight = -Scale(13);
     font.lfWeight = FW_NORMAL;
     font.lfQuality = CLEARTYPE_QUALITY;
@@ -192,6 +198,33 @@ void CProcessTrafficPopup::ApplyDpi(UINT dpi)
     font.lfHeight = -Scale(11);
     font.lfWeight = FW_NORMAL;
     m_smallFont.CreateFontIndirect(&font);
+}
+
+void CProcessTrafficPopup::RefreshAppearance()
+{
+    HIGHCONTRAST contrast{};
+    contrast.cbSize = sizeof(contrast);
+    m_highContrast = ::SystemParametersInfo(SPI_GETHIGHCONTRAST, sizeof(contrast), &contrast, 0)
+        && (contrast.dwFlags & HCF_HIGHCONTRASTON) != 0;
+    DWORD lightTheme = 1;
+    DWORD bytes = sizeof(lightTheme);
+    if (::RegGetValueW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+        L"AppsUseLightTheme", RRF_RT_REG_DWORD, nullptr, &lightTheme, &bytes) != ERROR_SUCCESS)
+        lightTheme = 1;
+    m_darkTheme = lightTheme == 0;
+}
+
+void CProcessTrafficPopup::UpdateWindowRegion(int width, int height)
+{
+    if (m_highContrast)
+    {
+        SetWindowRgn(nullptr, FALSE);
+        return;
+    }
+    CRgn rounded;
+    if (rounded.CreateRoundRectRgn(0, 0, width + 1, height + 1, Scale(20), Scale(20))
+        && SetWindowRgn(static_cast<HRGN>(rounded.GetSafeHandle()), FALSE))
+        rounded.Detach(); // 成功后区域归窗口所有。
 }
 
 void CProcessTrafficPopup::PositionWindow(bool show)
@@ -220,7 +253,7 @@ void CProcessTrafficPopup::PositionWindow(bool show)
     const int availableHeight = (std::max)(1, workArea.Height() - gap * 2);
     const int width = (std::min)(Scale(600), availableWidth);
     const int rowHeight = (std::max)(1, Scale(30));
-    const int baseHeight = Scale(210 + (m_data.extraSummary.empty() ? 0 : 48));
+    const int baseHeight = Scale(210 + (m_data.extraSummary.empty() ? 0 : 48) + (HasSystemTraffic() ? 22 : 0));
     const int rowCapacity = (std::max)(0, (availableHeight - baseHeight) / rowHeight);
     m_visibleRows = (std::min)(m_data.rows.size(), static_cast<size_t>(rowCapacity));
     const int bodyHeight = m_data.rows.empty() ? Scale(64) : static_cast<int>(m_visibleRows) * rowHeight;
@@ -234,6 +267,7 @@ void CProcessTrafficPopup::PositionWindow(bool show)
     y = (std::max<int>)(workArea.top + gap, (std::min<int>)(y, workArea.bottom - height - gap));
     SetWindowPos(&wndTopMost, x, y, width, height,
         SWP_NOACTIVATE | SWP_NOOWNERZORDER | (show ? SWP_SHOWWINDOW : 0));
+    UpdateWindowRegion(width, height);
     m_positioning = false;
 }
 
@@ -267,6 +301,9 @@ CString CProcessTrafficPopup::FormatBytes(std::uint64_t bytes, bool perSecond)
 
 CString CProcessTrafficPopup::DisplayName(const Row& row)
 {
+    // System 无法像普通进程一样查询映像；也兼容仍返回“PID 4”的旧采集进程。
+    if (row.pid == 4)
+        return L"系统（System）";
     // 输入只需进程名；即使调用者误传完整路径，也只展示最后一段名称。
     const size_t lastSeparator = row.name.find_last_of(L"/\\");
     CString name((lastSeparator == std::wstring::npos ? row.name : row.name.substr(lastSeparator + 1)).c_str());
@@ -274,6 +311,33 @@ CString CProcessTrafficPopup::DisplayName(const Row& row)
     name.Replace(L'\n', L' ');
     name.Replace(L'\t', L' ');
     return name.IsEmpty() ? CString(L"未知程序") : name.Left(96);
+}
+
+bool CProcessTrafficPopup::HasSystemTraffic() const
+{
+    return std::any_of(m_data.rows.begin(), m_data.rows.end(), [](const Row& row) { return row.pid == 4; });
+}
+
+CString CProcessTrafficPopup::NameForPid(DWORD pid) const
+{
+    for (const auto& row : m_data.rows)
+        if (row.pid == pid)
+            return DisplayName(row);
+    CString name;
+    name.Format(L"程序 %lu", static_cast<unsigned long>(pid));
+    return name;
+}
+
+const CProcessTrafficPopup::Row* CProcessTrafficPopup::RowAt(CPoint point) const
+{
+    CRect rect;
+    GetClientRect(&rect);
+    const int top = Scale(164 + (m_data.extraSummary.empty() ? 0 : 48));
+    const int height = (std::max)(1, Scale(30));
+    if (point.x < Scale(10) || point.x >= rect.right - Scale(10) || point.y < top)
+        return nullptr;
+    const auto index = static_cast<size_t>((point.y - top) / height);
+    return index < m_visibleRows && index < m_data.rows.size() ? &m_data.rows[index] : nullptr;
 }
 
 void CProcessTrafficPopup::UpdateAccessibleText()
@@ -288,7 +352,9 @@ void CProcessTrafficPopup::UpdateAccessibleText()
     if (!m_data.extraSummary.empty())
         summary += CString(m_data.extraSummary.substr(0, 512).c_str()) + L"\r\n";
     summary += CString(m_data.status.substr(0, 256).c_str());
-    summary += L"\r\n所有连接 · TCP/UDP · 本次累计自采集启动\r\n";
+    summary += L"\r\n所有连接 · TCP/UDP · 本次累计自采集启动\r\n点击程序查看当前 TCP 连接 IP 与归属地；标题右侧可单独查询 IP\r\n";
+    if (HasSystemTraffic())
+        summary += L"System：系统及内核网络流量，可能包含代应用收发的数据\r\n";
     if (m_data.canEnable)
         summary += L"点击允许程序流量统计\r\n";
     if (m_data.rows.empty())
@@ -320,13 +386,28 @@ CString CProcessTrafficPopup::FormatUsage(double usage)
 void CProcessTrafficPopup::DrawContent(CDC& dc, const CRect& clientRect)
 {
     const int saved = dc.SaveDC();
-    const COLORREF background = ::GetSysColor(COLOR_WINDOW);
-    const COLORREF foreground = ::GetSysColor(COLOR_WINDOWTEXT);
-    const COLORREF secondary = ::GetSysColor(COLOR_GRAYTEXT);
-    const COLORREF separator = ::GetSysColor(COLOR_3DLIGHT);
-    const COLORREF accent = ::GetSysColor(COLOR_HIGHLIGHT);
+    const auto color = [&](COLORREF light, COLORREF dark, int systemColor)
+    {
+        return m_highContrast ? ::GetSysColor(systemColor) : (m_darkTheme ? dark : light);
+    };
+    const COLORREF background = color(RGB(237, 242, 248), RGB(30, 36, 46), COLOR_WINDOW);
+    const COLORREF surface = color(RGB(247, 249, 252), RGB(39, 47, 59), COLOR_WINDOW);
+    const COLORREF foreground = color(RGB(38, 51, 69), RGB(229, 235, 244), COLOR_WINDOWTEXT);
+    const COLORREF secondary = color(RGB(89, 105, 125), RGB(166, 180, 199), COLOR_WINDOWTEXT);
+    const COLORREF separator = color(RGB(211, 222, 235), RGB(65, 77, 94), COLOR_WINDOWTEXT);
+    const COLORREF accent = color(RGB(55, 101, 156), RGB(145, 187, 238), COLOR_WINDOWTEXT);
+    const COLORREF uploadAccent = color(RGB(42, 113, 110), RGB(129, 200, 186), COLOR_WINDOWTEXT);
+    const COLORREF activeRow = color(RGB(224, 235, 247), RGB(45, 62, 82), COLOR_WINDOW);
     dc.FillSolidRect(clientRect, background);
-    dc.Draw3dRect(clientRect, ::GetSysColor(COLOR_WINDOWFRAME), ::GetSysColor(COLOR_WINDOWFRAME));
+    CPen border(PS_SOLID, (std::max)(1, Scale(1)), separator);
+    CBrush fill(background);
+    CPen* oldPen = dc.SelectObject(&border);
+    CBrush* oldBrush = dc.SelectObject(&fill);
+    CRect outline(clientRect);
+    outline.DeflateRect(0, 0, 1, 1);
+    dc.RoundRect(outline, CPoint(Scale(m_highContrast ? 0 : 20), Scale(m_highContrast ? 0 : 20)));
+    dc.SelectObject(oldPen);
+    dc.SelectObject(oldBrush);
     dc.SetBkMode(TRANSPARENT);
     dc.SetTextColor(foreground);
 
@@ -344,17 +425,31 @@ void CProcessTrafficPopup::DrawContent(CDC& dc, const CRect& clientRect)
         dc.SetTextColor(color);
         dc.DrawText(value, rect, textFlags | align);
     };
+    auto panel = [&](CRect rect, COLORREF panelColor)
+    {
+        CPen pen(PS_SOLID, 1, panelColor);
+        CBrush brush(panelColor);
+        CPen* previousPen = dc.SelectObject(&pen);
+        CBrush* previousBrush = dc.SelectObject(&brush);
+        dc.RoundRect(rect, CPoint(Scale(m_highContrast ? 0 : 12), Scale(m_highContrast ? 0 : 12)));
+        dc.SelectObject(previousPen);
+        dc.SelectObject(previousBrush);
+    };
 
-    text(L"程序流量排行榜", CRect(padding, Scale(14), right, Scale(37)), foreground, titleFont);
+    m_lookupRect = CRect((std::max)(padding, right - Scale(100)), Scale(14), right, Scale(37));
+    text(L"程序流量排行榜", CRect(padding, Scale(14), m_lookupRect.left - Scale(8), Scale(37)), foreground, titleFont);
+    text(L"查询 IP / 归属地", m_lookupRect, accent, smallFont, DT_RIGHT);
     const int middle = padding + innerWidth / 2;
+    panel(CRect(padding - Scale(4), Scale(42), middle - Scale(6), Scale(85)), surface);
+    panel(CRect(middle - Scale(2), Scale(42), right + Scale(4), Scale(85)), surface);
     CString download = L"总下载  " + FormatBytes(m_data.downloadBytesPerSecond, true);
     CString upload = L"总上传  " + FormatBytes(m_data.uploadBytesPerSecond, true);
     text(download, CRect(padding, Scale(45), middle - Scale(8), Scale(65)), accent, bodyFont);
-    text(upload, CRect(middle, Scale(45), right, Scale(65)), foreground, bodyFont);
+    text(upload, CRect(middle + Scale(6), Scale(45), right, Scale(65)), uploadAccent, bodyFont);
     CString cpu = L"CPU  " + FormatUsage(m_data.cpuUsagePercent);
     CString memory = L"内存  " + FormatUsage(m_data.memoryUsagePercent);
     text(cpu, CRect(padding, Scale(67), middle - Scale(8), Scale(83)), secondary, smallFont);
-    text(memory, CRect(middle, Scale(67), right, Scale(83)), secondary, smallFont);
+    text(memory, CRect(middle + Scale(6), Scale(67), right, Scale(83)), secondary, smallFont);
     const int detailsOffset = m_data.extraSummary.empty() ? 0 : 48;
     if (detailsOffset != 0)
     {
@@ -396,7 +491,6 @@ void CProcessTrafficPopup::DrawContent(CDC& dc, const CRect& clientRect)
     text(L"下载", CRect(nameRight, headerTop, downloadRight - columnGap, bodyTop - Scale(5)), secondary, smallFont, DT_RIGHT);
     text(L"上传", CRect(downloadRight, headerTop, uploadRight - columnGap, bodyTop - Scale(5)), secondary, smallFont, DT_RIGHT);
     text(L"本次流量", CRect(uploadRight, headerTop, right, bodyTop - Scale(5)), secondary, smallFont, DT_RIGHT);
-    dc.FillSolidRect(padding, bodyTop - Scale(3), innerWidth, (std::max)(1, Scale(1)), separator);
 
     const int rowHeight = Scale(30);
     if (m_data.rows.empty())
@@ -411,26 +505,33 @@ void CProcessTrafficPopup::DrawContent(CDC& dc, const CRect& clientRect)
             const Row& row = m_data.rows[i];
             const int top = bodyTop + static_cast<int>(i) * rowHeight;
             const int bottom = top + rowHeight;
+            if (i == 0 && TotalRate(row) != 0)
+                panel(CRect(padding - Scale(6), top + Scale(1), right + Scale(6), bottom - Scale(1)), activeRow);
+            else if (i % 2 == 1)
+                panel(CRect(padding - Scale(6), top + Scale(1), right + Scale(6), bottom - Scale(1)), surface);
             const CString name = DisplayName(row);
             CString pid;
             pid.Format(L"%lu", static_cast<unsigned long>(row.pid));
             const int pidWidth = (std::min)(Scale(56), (std::max)(0, (nameRight - padding) / 3));
             text(name, CRect(padding, top, nameRight - columnGap - pidWidth, bottom), foreground, bodyFont);
             text(pid, CRect(nameRight - columnGap - pidWidth, top, nameRight - columnGap, bottom), secondary, smallFont, DT_RIGHT);
-            text(FormatBytes(row.downloadBytesPerSecond, true), CRect(nameRight, top, downloadRight - columnGap, bottom), foreground, bodyFont, DT_RIGHT);
-            text(FormatBytes(row.uploadBytesPerSecond, true), CRect(downloadRight, top, uploadRight - columnGap, bottom), foreground, bodyFont, DT_RIGHT);
+            text(FormatBytes(row.downloadBytesPerSecond, true), CRect(nameRight, top, downloadRight - columnGap, bottom), row.downloadBytesPerSecond ? accent : secondary, bodyFont, DT_RIGHT);
+            text(FormatBytes(row.uploadBytesPerSecond, true), CRect(downloadRight, top, uploadRight - columnGap, bottom), row.uploadBytesPerSecond ? uploadAccent : secondary, bodyFont, DT_RIGHT);
             text(FormatBytes(row.totalBytes), CRect(uploadRight, top, right, bottom), foreground, bodyFont, DT_RIGHT);
         }
     }
 
-    const int footerTop = clientRect.bottom - Scale(34);
+    const int footerTop = clientRect.bottom - Scale(34 + (HasSystemTraffic() ? 22 : 0));
     dc.FillSolidRect(padding, footerTop - Scale(6), innerWidth, (std::max)(1, Scale(1)), separator);
-    CString footer = L"按当前速率排序 · 每秒刷新";
+    CString footer = L"点击程序查看连接 · 按当前速率排序 · 每秒刷新";
     if (m_visibleRows < m_data.rows.size())
         footer.Format(L"按当前速率排序 · 当前显示 %u 个程序", static_cast<unsigned>(m_visibleRows));
     text(footer, CRect(padding, footerTop, right, footerTop + Scale(13)), secondary, smallFont);
     text(L"所有连接 · TCP/UDP · 本次累计自采集启动",
-        CRect(padding, footerTop + Scale(14), right, clientRect.bottom - Scale(7)), secondary, smallFont);
+        CRect(padding, footerTop + Scale(14), right, footerTop + Scale(27)), secondary, smallFont);
+    if (HasSystemTraffic())
+        text(L"System：系统及内核网络流量，可能包含代应用收发的数据",
+            CRect(padding, footerTop + Scale(30), right, clientRect.bottom - Scale(7)), secondary, smallFont);
     dc.RestoreDC(saved);
 }
 
@@ -479,6 +580,13 @@ void CProcessTrafficPopup::OnLButtonDown(UINT, CPoint point)
 {
     if (m_data.canEnable && m_enableRect.PtInRect(point) && ::IsWindow(m_owner))
         ::PostMessage(m_owner, EnableMessage, 0, 0);
+    else if (::IsWindow(m_owner))
+    {
+        if (m_lookupRect.PtInRect(point))
+            ::PostMessage(m_owner, ConnectionsMessage, 0, 0);
+        else if (const Row* row = RowAt(point))
+            ::PostMessage(m_owner, ConnectionsMessage, row->pid, 0);
+    }
 }
 
 BOOL CProcessTrafficPopup::OnSetCursor(CWnd*, UINT, UINT)
@@ -486,8 +594,9 @@ BOOL CProcessTrafficPopup::OnSetCursor(CWnd*, UINT, UINT)
     CPoint cursor;
     ::GetCursorPos(&cursor);
     ScreenToClient(&cursor);
-    const bool enableLink = m_data.canEnable && m_enableRect.PtInRect(cursor);
-    ::SetCursor(::LoadCursor(nullptr, enableLink ? IDC_HAND : IDC_ARROW));
+    const bool link = (m_data.canEnable && m_enableRect.PtInRect(cursor))
+        || m_lookupRect.PtInRect(cursor) || RowAt(cursor) != nullptr;
+    ::SetCursor(::LoadCursor(nullptr, link ? IDC_HAND : IDC_ARROW));
     return TRUE;
 }
 
@@ -523,6 +632,24 @@ void CProcessTrafficPopup::OnDestroy()
     KillTimer(TrackingTimer);
     m_owner = nullptr;
     CWnd::OnDestroy();
+}
+
+void CProcessTrafficPopup::OnSettingChange(UINT flags, LPCTSTR section)
+{
+    CWnd::OnSettingChange(flags, section);
+    RefreshAppearance();
+    if (IsWindowVisible())
+        PositionWindow(false);
+    Invalidate(FALSE);
+}
+
+void CProcessTrafficPopup::OnSysColorChange()
+{
+    CWnd::OnSysColorChange();
+    RefreshAppearance();
+    if (IsWindowVisible())
+        PositionWindow(false);
+    Invalidate(FALSE);
 }
 
 LRESULT CProcessTrafficPopup::OnDpiChanged(WPARAM wParam, LPARAM)

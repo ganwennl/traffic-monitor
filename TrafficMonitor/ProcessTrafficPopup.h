@@ -32,6 +32,7 @@ public:
     };
 
     static constexpr UINT EnableMessage = WM_APP + 180;
+    static constexpr UINT ConnectionsMessage = WM_APP + 181;
 
     CProcessTrafficPopup() = default;
     virtual ~CProcessTrafficPopup();
@@ -42,6 +43,7 @@ public:
     void ShowAt(const CRect& trayIconRect);
     void RequestHide();
     void Hide();
+    CString NameForPid(DWORD pid) const;
 
 protected:
     DECLARE_MESSAGE_MAP()
@@ -53,6 +55,8 @@ protected:
     afx_msg BOOL OnSetCursor(CWnd* window, UINT hitTest, UINT message);
     afx_msg void OnTimer(UINT_PTR timerId);
     afx_msg void OnDestroy();
+    afx_msg void OnSettingChange(UINT flags, LPCTSTR section);
+    afx_msg void OnSysColorChange();
     afx_msg LRESULT OnDpiChanged(WPARAM wParam, LPARAM lParam);
 
 private:
@@ -63,22 +67,29 @@ private:
     HWND m_owner{};
     CRect m_anchorRect;
     CRect m_enableRect;
+    CRect m_lookupRect;
     UINT m_dpi{ 96 };
     size_t m_visibleRows{};
     DWORD m_outsideSince{};
     bool m_outside{ false };
     bool m_enableHovered{ false };
     bool m_positioning{ false };
+    bool m_darkTheme{ false };
+    bool m_highContrast{ false };
     CFont m_bodyFont;
     CFont m_titleFont;
     CFont m_smallFont;
 
     int Scale(int pixels) const;
     void ApplyDpi(UINT dpi);
+    void RefreshAppearance();
+    void UpdateWindowRegion(int width, int height);
     void PositionWindow(bool show);
     void DrawContent(CDC& dc, const CRect& clientRect);
     void UpdateAccessibleText();
     static CString DisplayName(const Row& row);
+    bool HasSystemTraffic() const;
+    const Row* RowAt(CPoint point) const;
     bool IsPointerInside(CPoint screenPoint) const;
     static CString FormatBytes(std::uint64_t bytes, bool perSecond = false);
     static CString FormatUsage(double usage);

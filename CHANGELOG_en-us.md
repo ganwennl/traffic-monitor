@@ -2,6 +2,12 @@
 
 [简体中文](./CHANGELOG.md)
 
+## 1.86.5-personal
+
+- Restyled the process traffic popup with a soft blue-gray background, rounded corners and layered colors. Follows the Windows app theme and preserves system high-contrast colors.
+- Labels PID 4 as System and explains that it includes system and kernel network traffic. Traffic accounting is unchanged.
+- Click a process to inspect current TCP IPv4/IPv6 endpoints and approximate locations, or look up an IP manually. Uses the free ip2region community databases offline, without storing endpoints or query history. Windows UDP endpoint tables do not expose remote IPs.
+
 ## 1.86.4-personal
 
 - Renamed the program to TrafficMonitor Personal Edition. I wanted a few things for my own use, so I keep my own version with a few small changes.
