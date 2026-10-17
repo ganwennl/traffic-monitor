@@ -1,4 +1,4 @@
-**[简体中文](./update_log.md) | 繁體中文 | [English](./update_log_en-us.md)**
+**[简体中文](update_log.md) | 繁體中文 | [English](update_log_en-us.md)**
 
 # TrafficMonitor 更新日誌
 

@@ -1,8 +1,8 @@
-**[简体中文](./Help.md) | English**
+**[简体中文](Help.md) | English**
 
 # Personal Edition Help
 
-This help applies to this repository's Windows x64 Lite release. For a fresh installation, extract the entire portable ZIP from Releases, then run `TrafficMonitor.exe`. See [README](./README_en-us.md) for installation, origin and licenses.
+This help applies to this repository's Windows x64 Lite release. For a fresh installation, extract the entire portable ZIP from Releases, then run `TrafficMonitor.exe`. See [README](usage.en.md) for installation, origin and licenses.
 
 ## Updating
 

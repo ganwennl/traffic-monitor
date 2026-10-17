@@ -4,7 +4,7 @@
 
 ## 版本与发布
 
-- 产品显示版本由 `TrafficMonitor/stdafx.h` 的 `VERSION` 定义；Windows 数字文件版本同时在资源中维护。
+- 产品显示版本由 `src/TrafficMonitor/stdafx.h` 的 `VERSION` 定义；Windows 数字文件版本同时在资源中维护。
 - 当前发布目标为 x64 Lite，静态 MFC/CRT，`asInvoker`，不附带硬件监控 DLL、内核驱动或插件 DLL。
 - `1.86.4-personal` 起，启动时自动检查 `ganwennl/traffic-monitor` 的正式 Releases，可在右键菜单关闭或手动检查。发现新版本后由用户确认打开下载页，不自动替换文件；不使用原作者的 Release、Gitee 或插件更新服务。
 - 发布时记录版本、实际源码摘要和可执行文件 SHA256。Git 提交只能标识基础历史；存在未提交修改时，以记录的输入 SHA256 清单为准。

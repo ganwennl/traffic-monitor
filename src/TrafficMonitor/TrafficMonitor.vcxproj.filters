@@ -451,7 +451,7 @@
     <ClInclude Include="SetItemOrderDlg.h">
       <Filter>源文件和头文件\对话框类\选项设置对话框\SetItemOrderDlg</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\PluginInterface.h">
+    <ClInclude Include="..\..\include\PluginInterface.h">
       <Filter>源文件和头文件\头文件</Filter>
     </ClInclude>
     <ClInclude Include="PluginManager.h">
@@ -874,8 +874,8 @@
     <None Include="res\TrafficMonitor.rc2">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="..\LICENSE" />
-    <None Include="..\LICENSE_CN" />
+    <None Include="..\..\LICENSE" />
+    <None Include="..\..\LICENSE_CN" />
     <None Include="language\Simplified_Chinese.ini">
       <Filter>资源文件\language</Filter>
     </None>

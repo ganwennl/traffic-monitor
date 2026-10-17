@@ -33,7 +33,7 @@
     <ClInclude Include="DataManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\PluginInterface.h">
+    <ClInclude Include="..\..\include\PluginInterface.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">

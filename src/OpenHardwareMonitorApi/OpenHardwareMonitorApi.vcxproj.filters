@@ -24,13 +24,13 @@
     <ClInclude Include="OpenHardwareMonitorImp.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\OpenHardwareMonitor\OpenHardwareMonitorApi.h">
+    <ClInclude Include="..\..\include\OpenHardwareMonitor\OpenHardwareMonitorApi.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="UpdateVisitor.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\OpenHardwareMonitor\OpenHardwareMonitorGlobal.h">
+    <ClInclude Include="..\..\include\OpenHardwareMonitor\OpenHardwareMonitorGlobal.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,4 +1,4 @@
-**[简体中文](./update_log.md) | [繁體中文](./update_log_zh-tw.md) | English**
+**[简体中文](update_log.md) | [繁體中文](update_log_zh-tw.md) | English**
 
 # TrafficMonitor Update log
 ## V1.85.1 (2025/02/10)

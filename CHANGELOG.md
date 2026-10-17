@@ -1,6 +1,6 @@
 # 个人版更新记录
 
-[English](./CHANGELOG_en-us.md)
+[English](CHANGELOG_en-us.md)
 
 ## 1.86.5-personal
 
@@ -34,4 +34,4 @@
 - 固定发布目标为 x64 Lite，静态 MFC/CRT，主程序权限为 `asInvoker`。
 - 保留原作者、许可证、第三方归属和既有配置/皮肤/历史数据的兼容方式。
 
-原版的历史记录见 `UpdateLog/update_log.md`；这里记我自己这个版本的改动。
+原版的历史记录见 `docs/upstream-history/update_log.md`；这里记我自己这个版本的改动。

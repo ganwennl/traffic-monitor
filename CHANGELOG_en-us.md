@@ -1,6 +1,6 @@
 # Personal edition changes
 
-[简体中文](./CHANGELOG.md)
+[简体中文](CHANGELOG.md)
 
 ## 1.86.5-personal
 
@@ -34,4 +34,4 @@
 - Standardized releases on x64 Lite with static MFC/CRT and `asInvoker` main-process privileges.
 - Retained original authorship, licenses, third-party attribution and support for existing configuration, skins and traffic history.
 
-`UpdateLog/update_log_en-us.md` keeps the original project's history. This file lists changes to my version.
+`docs/upstream-history/update_log_en-us.md` keeps the original project's history. This file lists changes to my version.

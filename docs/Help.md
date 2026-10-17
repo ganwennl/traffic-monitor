@@ -1,8 +1,8 @@
-**简体中文 | [English](./Help_en-us.md)**
+**简体中文 | [English](Help_en-us.md)**
 
 # 个人版使用帮助
 
-本帮助适用于本仓库发布的 Windows x64 Lite。初次使用请完整解压 Releases 的便携 ZIP，再运行 `TrafficMonitor.exe`。版本来源、安装步骤与许可见 [README](./README.md)。
+本帮助适用于本仓库发布的 Windows x64 Lite。初次使用请完整解压 Releases 的便携 ZIP，再运行 `TrafficMonitor.exe`。版本来源、安装步骤与许可见 [README](usage.md)。
 
 ## 如何更新？
 
