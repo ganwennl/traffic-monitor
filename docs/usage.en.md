@@ -6,13 +6,13 @@ A Windows tool for network speed, CPU, RAM and traffic history. It can sit in a 
 
 I wanted a few things for my own use, so I keep my own version with a few small changes. It is based on [TrafficMonitor V1.86](https://github.com/zhongyang219/TrafficMonitor), originally written by **zhongyang219**.
 
-Current source version: **1.86.5-personal · Windows x64 Lite**. Published downloads are listed in [my repository's Releases](https://github.com/ganwennl/traffic-monitor/releases). Update checks use only those Releases and can be turned off. When a new version is available, the program asks before opening the download page.
+Current source version: **1.86.6-personal · Windows x64 Lite**. Published downloads are listed in [my repository's Releases](https://github.com/ganwennl/traffic-monitor/releases). Update checks use only those Releases and can be turned off. When a new version is available, the program asks before opening the download page.
 
 ## Download and install
 
 1. Open [Releases](https://github.com/ganwennl/traffic-monitor/releases) and download the latest `TrafficMonitor-<version>-Windows-x64-Lite-portable.zip`. `Source code` downloads are source archives, not runnable applications.
 2. Extract the whole ZIP to a directory writable by your account, such as `C:\Tools\TrafficMonitor`. Do not run from the ZIP or copy only its EXE for a fresh installation.
-3. Run `TrafficMonitor.exe`. The main program needs no installer or administrator permission. MFC/CRT are statically linked, so no separate runtime installation is needed.
+3. Run `TrafficMonitor.exe` and confirm administrator permission once through Windows UAC. Cancelling leaves the application closed. No installer is needed. MFC/CRT are statically linked, so no separate runtime installation is needed.
 
 The full package includes the EXE, all bundled skins, initial settings, Chinese/English documentation, changelogs, licenses and file verification information. Icons and language resources are embedded in the EXE. No hardware-monitor DLL, kernel driver or plug-in DLL is bundled.
 
@@ -27,7 +27,7 @@ This build was checked on Windows 11 x64. The program targets Windows 10/11 x64;
 - Hover over the taskbar speed display or floating window for about 400 ms to see the eight processes using the most traffic. The tray icon keeps its short tooltip.
 - Click a ranked process to see current TCP endpoints and approximate IP locations, or use the top-right action for manual IPv4/IPv6 lookup. Uses the free ip2region community databases offline. UDP endpoint tables do not expose remote IPs.
 
-Per-process traffic uses native Windows ETW. The main application keeps normal user privileges. If collection needs additional permission, click the allow-collection action in the details popup: Windows requests administrator authorization for a separate collector. Cancelling leaves ordinary speed monitoring available. Fresh portable settings disable automatic permission requests; replacing only the EXE preserves your existing preference.
+Per-process traffic uses native Windows ETW. The main application runs as administrator, with normal collection inside the main process and no separate collector approval. `show_process_traffic` still disables details; `auto_elevate_process_traffic` is retained for compatibility and does not control startup UAC. Updates retain existing settings.
 
 Process ranking covers machine-wide TCP/UDP over IPv4/IPv6. Totals start when collection starts and differ from the selected-adapter accounting in the main window. No network addresses, packet contents or ETL files are saved, and no driver, service or scheduled task is installed. See [usage and troubleshooting](Help_en-us.md).
 
@@ -45,7 +45,7 @@ Keep `config.ini`, `global_cfg.ini`, `history_traffic.dat`, `history_traffic.dat
 The package starts with clean settings and contains no maintainer configuration, traffic history or logs. Example hash check:
 
 ```powershell
-Get-FileHash .\TrafficMonitor-1.86.5-personal-Windows-x64-Lite-portable.zip -Algorithm SHA256
+Get-FileHash .\TrafficMonitor-1.86.6-personal-Windows-x64-Lite-portable.zip -Algorithm SHA256
 ```
 
 My changes are listed in [CHANGELOG_en-us.md](../CHANGELOG_en-us.md). `docs/upstream-history` keeps the original project's historical notes.
@@ -62,7 +62,7 @@ pwsh -File .\build.ps1 -MfcRoot 'C:\Toolchains\atlmfc'
 pwsh -File .\build.ps1 -ExecutableOnly
 ```
 
-The script builds a temporary copy of the current tree using `Release (lite)|x64`, static MFC/CRT and `asInvoker`. Source, build and output directories are separate; existing output directories are rejected and original source is preserved. Source archives are supported too. Final JSON identifies the EXE and evidence paths. `SOURCE-INPUTS.json`, `STAGED-INPUTS.json`, `BUILD-MANIFEST.json` and `build.log` in the build directory record actual inputs and outputs. Package `BUILD-INFO.json` and `SOURCE-INPUTS.json` omit local absolute paths.
+The script builds a temporary copy of the current tree using `Release (lite)|x64`, static MFC/CRT and `requireAdministrator`. Source, build and output directories are separate; existing output directories are rejected and original source is preserved. Source archives are supported too. Final JSON identifies the EXE and evidence paths. `SOURCE-INPUTS.json`, `STAGED-INPUTS.json`, `BUILD-MANIFEST.json` and `build.log` in the build directory record actual inputs and outputs. Package `BUILD-INFO.json` and `SOURCE-INPUTS.json` omit local absolute paths.
 
 ## Licensing and feedback
 

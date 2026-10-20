@@ -2,6 +2,11 @@
 
 [简体中文](CHANGELOG.md)
 
+## 1.86.6-personal
+
+- The main application requests administrator permission at startup (`requireAdministrator`). Normal traffic collection runs in the main process without separate collector approval. Windows still asks for UAC confirmation once at startup; cancelling leaves the application closed.
+- Existing settings, skins and history are retained. No scheduled task was added and system UAC settings are unchanged. Automatic startup of the administrator version has not been verified.
+
 ## 1.86.5-personal
 
 - Restyled the process traffic popup with a soft blue-gray background, rounded corners and layered colors. Follows the Windows app theme and preserves system high-contrast colors.

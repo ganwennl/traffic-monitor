@@ -273,6 +273,11 @@
     <IncludePath>$(ProjectDir);$(ProjectDir)..\..\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)lib\x64;$(OutDir);$(SolutionDir)Bin\x64\$(Configuration)\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
+  <ItemDefinitionGroup>
+    <Link>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>

@@ -6,7 +6,7 @@
 
 ## 使用
 
-下载 Windows x64 Lite 便携包，完整解压后运行 `TrafficMonitor.exe`。升级时保留配置、皮肤与流量历史，只替换需要更新的运行文件。详细步骤见[使用与排障](docs/Help.md)。
+下载 Windows x64 Lite 便携包，完整解压后运行 `TrafficMonitor.exe`。程序启动时请求管理员权限，按 Windows 提示确认一次；正常采集无需再次授权，取消启动授权则不启动程序。升级时保留配置、皮肤与流量历史，只替换需要更新的运行文件。详细步骤见[使用与排障](docs/Help.md)。
 
 ## 项目目录
 
@@ -33,7 +33,7 @@ pwsh -File .\build.ps1 -ExecutableOnly
 
 ## English
 
-A personally maintained TrafficMonitor fork for Windows, with per-process traffic, TCP connection details and offline IP lookup. See [Releases](https://github.com/ganwennl/traffic-monitor/releases/latest) and the [English guide](docs/usage.en.md). Application code, optional components, plugin examples and documentation are grouped separately.
+A personally maintained TrafficMonitor fork for Windows, with per-process traffic, TCP connection details and offline IP lookup. Startup requests administrator permission once through Windows; normal collection needs no additional approval. Cancelling startup approval leaves the application closed. See [Releases](https://github.com/ganwennl/traffic-monitor/releases/latest) and the [English guide](docs/usage.en.md). Application code, optional components, plugin examples and documentation are grouped separately.
 
 ## 许可
 

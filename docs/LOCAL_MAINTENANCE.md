@@ -5,7 +5,7 @@
 ## 版本与发布
 
 - 产品显示版本由 `src/TrafficMonitor/stdafx.h` 的 `VERSION` 定义；Windows 数字文件版本同时在资源中维护。
-- 当前发布目标为 x64 Lite，静态 MFC/CRT，`asInvoker`，不附带硬件监控 DLL、内核驱动或插件 DLL。
+- 当前发布目标为 x64 Lite，静态 MFC/CRT，`requireAdministrator`，不附带硬件监控 DLL、内核驱动或插件 DLL。
 - `1.86.4-personal` 起，启动时自动检查 `ganwennl/traffic-monitor` 的正式 Releases，可在右键菜单关闭或手动检查。发现新版本后由用户确认打开下载页，不自动替换文件；不使用原作者的 Release、Gitee 或插件更新服务。
 - 发布时记录版本、实际源码摘要和可执行文件 SHA256。Git 提交只能标识基础历史；存在未提交修改时，以记录的输入 SHA256 清单为准。
 
@@ -60,6 +60,6 @@
 
 `1.86.3-local` 默认在任务栏网速窗口和悬浮小窗口悬停时显示排行榜（停留约 400 毫秒）。托盘图标保留原来的简短提示，不显示程序排行榜；主窗口和任务栏的 `show_tool_tip` 开关继续有效。排行榜，每秒显示占用最多的前 8 个进程、PID、下载/上传速度及本次累计流量。统计覆盖本机所有连接的 TCP/UDP、IPv4/IPv6；它与主窗口所选网卡的字节计数口径不同，累计从采集启动时开始。
 
-采集使用 Windows 原生 ETW，不安装驱动、服务或计划任务，不保存网络地址、包内容或 ETL 文件。主程序继续使用 `asInvoker`；权限不足时，单独的同程序采集进程通过 Windows 授权运行。取消授权仍可使用原有网速显示，悬停弹窗提供重新允许统计的入口。
+采集使用 Windows 原生 ETW，不安装驱动、服务或计划任务，不保存网络地址、包内容或 ETL 文件。`1.86.6-personal` 起，主程序使用 `requireAdministrator`，启动时仍需一次 Windows UAC 确认；取消则不启动程序。正常情况下直接在主进程内采集，不再另行授权采集器。
 
-`config.ini` 的 `[general]` 中，`show_process_traffic` 默认 `true`；`auto_elevate_process_traffic` 默认 `true`，改为 `false` 可仅在点击允许统计时申请权限。关闭主程序后采集进程和专用会话退出，不改变系统用户组或自动启动方式。
+`config.ini` 的 `[general]` 中，`show_process_traffic` 默认 `true`；`auto_elevate_process_traffic` 保留原有读取默认值和便携包初始值以兼容已有配置，不控制启动时的 UAC。关闭主程序后采集和专用会话退出，不改变系统用户组或自动启动方式。Lite 的 HKCU Run 启动项不保证管理员 EXE 自动启动，当前版本的开机自启尚未验证；未新增计划任务或改变 UAC 设置。

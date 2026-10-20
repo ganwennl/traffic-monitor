@@ -209,7 +209,7 @@ $props = @'
     <Link>
       <AdditionalLibraryDirectories>__MFC_LIB__;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/PDBALTPATH:%_PDB% %(AdditionalOptions)</AdditionalOptions>
-      <UACExecutionLevel>AsInvoker</UACExecutionLevel>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
   </ItemDefinitionGroup>
 </Project>
@@ -276,7 +276,7 @@ $manifest = [ordered]@{
     buildScript = [ordered]@{ path = $PSCommandPath; sha256 = $buildScriptSha256 }
     invocation = [ordered]@{ sourceRoot = $SourceRoot; mfcRoot = $MfcRoot; buildRoot = $BuildRoot; outputDir = $OutputDir; executableOnly = [bool]$ExecutableOnly }
     buildProperties = [ordered]@{ path = $localProps; sha256 = (Get-FileHash -LiteralPath $localProps -Algorithm SHA256).Hash.ToLowerInvariant() }
-    configuration = 'Release (lite)'; platform = 'x64'; mfc = 'Static'; crt = 'MultiThreaded'; uac = 'AsInvoker'
+    configuration = 'Release (lite)'; platform = 'x64'; mfc = 'Static'; crt = 'MultiThreaded'; uac = 'RequireAdministrator'
     executable = $outputExe; executableSha256 = $executableSha256; executableOnly = [bool]$ExecutableOnly
     ipDatabases = @($ipDataEntries); ipDatabasesIncluded = !$ExecutableOnly
     buildLog = $log; buildDirectory = $BuildRoot; compiler = $vsRoot; mfcRoot = $MfcRoot; msbuild = $msbuild; msbuildArguments = $buildArgs
@@ -291,10 +291,10 @@ if (-not $ExecutableOnly) {
         version = $version; builtAt = $manifest.builtAt
         sourceInputsSha256 = $manifest.sourceInputs.sha256; sourceFiles = $inputEntries.Count
         executableSha256 = $executableSha256; buildScriptSha256 = $buildScriptSha256
-        configuration = 'Release (lite)'; platform = 'x64'; mfc = 'Static'; crt = 'MultiThreaded'; uac = 'AsInvoker'
+        configuration = 'Release (lite)'; platform = 'x64'; mfc = 'Static'; crt = 'MultiThreaded'; uac = 'RequireAdministrator'
         msbuildVersion = (& $msbuild /nologo /version | Select-Object -Last 1)
         historicalOrigin = $historicalOrigin
-        notes = @('Source input hashes identify the build, including local modifications.', 'No network dependency restore requested.', 'No hardware-monitor DLL, kernel driver or plug-in DLL bundled.', 'New portable configuration requests collector elevation only on user action.')
+        notes = @('Source input hashes identify the build, including local modifications.', 'No network dependency restore requested.', 'No hardware-monitor DLL, kernel driver or plug-in DLL bundled.', 'The application requests administrator permission at startup; process traffic normally runs in the main process without a separate elevation prompt.')
     }
     Write-JsonFile (Join-Path $OutputDir 'BUILD-INFO.json') $publicInfo
 }

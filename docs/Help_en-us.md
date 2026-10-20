@@ -14,7 +14,7 @@ Check the version and SHA256, choose Exit in the old program's menu and replace 
 
 Hover over the taskbar speed display or floating window for about 400 ms to see the top eight processes, their PIDs, upload/download rates and totals since collection started. The tray keeps its short tooltip. Disabling the corresponding window's tooltip also disables this popup.
 
-Fresh portable settings do not automatically request administrator authorization. If permission is needed, click the allow-collection action in the popup to authorize a separate collector through Windows. Cancelling leaves ordinary speed monitoring available. Under `[general]` in `config.ini`, `show_process_traffic=false` disables details and `auto_elevate_process_traffic=false` allows only manual permission requests. Replacing only the EXE retains existing preferences.
+The application requests administrator permission at startup. Confirm Windows UAC once; cancelling leaves the application closed. Normal collection runs in the main process without separate collector approval. Under `[general]` in `config.ini`, `show_process_traffic=false` disables details. `auto_elevate_process_traffic` is retained for compatibility and does not control startup UAC. Replacing only the EXE retains existing preferences.
 
 Details cover machine-wide TCP/UDP over IPv4/IPv6 and use different accounting from the selected-adapter totals. Traffic before collection started is not included. New connections can take one refresh cycle to appear. No addresses, packet contents or ETL files are saved. Exiting the main application stops collection.
 
@@ -40,7 +40,7 @@ Right-click the notification icon and clear Mouse Penetration. A click-through f
 
 ## Startup no longer works
 
-Lite stores startup configuration in the current user's `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run`. After moving the program, disable and re-enable startup to update its path. Administrator execution is unnecessary.
+Lite still stores startup configuration in the current user's `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run`. This does not guarantee automatic startup of an administrator EXE, and startup at logon has not been verified for this version. Start it manually and confirm UAC if needed. No scheduled task was added and UAC settings are unchanged. Moving the program also requires updating the old startup path.
 
 ## Configuration cannot be saved or seems to disappear
 

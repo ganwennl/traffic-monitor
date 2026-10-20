@@ -6,13 +6,13 @@
 
 由于有点个人需求，我自己维护了一个版本，修改了点小功能。原版是 [TrafficMonitor V1.86](https://github.com/zhongyang219/TrafficMonitor)，原作者是 **zhongyang219**。
 
-当前源码版本 **1.86.5-personal · Windows x64 Lite**；已发布的下载版本见[我这个仓库的 Releases](https://github.com/ganwennl/traffic-monitor/releases)。自动检查更新也只使用这些 Releases，可以关闭。有新版本时会提醒，确认后打开下载页。
+当前源码版本 **1.86.6-personal · Windows x64 Lite**；已发布的下载版本见[我这个仓库的 Releases](https://github.com/ganwennl/traffic-monitor/releases)。自动检查更新也只使用这些 Releases，可以关闭。有新版本时会提醒，确认后打开下载页。
 
 ## 下载与安装
 
 1. 打开 [Releases](https://github.com/ganwennl/traffic-monitor/releases)，下载最新的 `TrafficMonitor-<版本>-Windows-x64-Lite-portable.zip`。`Source code` 是源码，不能直接运行。
 2. 完整解压到当前用户可写的目录，例如 `C:\Tools\TrafficMonitor`；不要直接从 ZIP 中运行，也不要只取 ZIP 中的 EXE。
-3. 双击 `TrafficMonitor.exe`。主程序无需安装或管理员权限；MFC/CRT 静态链接，无需另外安装其运行库。
+3. 双击 `TrafficMonitor.exe`，按 Windows UAC 提示确认一次管理员授权；取消则不启动程序。无需安装；MFC/CRT 静态链接，无需另外安装其运行库。
 
 完整包包含 EXE、全部内置皮肤、初始配置、中英文说明、更新日志、许可证和文件校验信息。图标和语言资源已编入 EXE；不附带硬件监控 DLL、内核驱动或插件 DLL。
 
@@ -27,7 +27,7 @@
 - 鼠标停留在任务栏网速或悬浮窗约 400 毫秒可查看进程流量前 8 名。托盘图标仍使用简短提示。
 - 点击排行榜里的程序可查看当前 TCP 连接 IP、端口和归属地；右上角可手动查询 IPv4/IPv6。使用免费的 ip2region 社区库离线查询，地区仅供参考；UDP 端点表不提供远端 IP。
 
-进程流量使用 Windows 原生 ETW。主程序保持普通用户权限；权限不足时，点击明细中的允许统计入口，Windows 会请求启动独立采集进程的管理员授权。取消授权不影响普通网速显示。完整便携包的初始配置关闭自动请求授权；手动替换 EXE 时保留你已有的授权设置。
+进程流量使用 Windows 原生 ETW。主程序以管理员权限运行，正常情况下在主进程内采集，无需另行授权采集器。`show_process_traffic` 仍可关闭明细，`auto_elevate_process_traffic` 保留兼容；它不控制启动时的 UAC。更新时保留已有配置。
 
 排行榜统计本机所有 TCP/UDP、IPv4/IPv6 连接，累计从本次采集开始计算，与主窗口选定网卡的统计口径不同。程序不保存网络地址、包内容或 ETL 文件，也不安装驱动、服务或计划任务。详见[使用与排障](Help.md)。
 
@@ -45,7 +45,7 @@
 完整包从空配置开始，不含维护者的私人配置、历史流量或日志。校验命令：
 
 ```powershell
-Get-FileHash .\TrafficMonitor-1.86.5-personal-Windows-x64-Lite-portable.zip -Algorithm SHA256
+Get-FileHash .\TrafficMonitor-1.86.6-personal-Windows-x64-Lite-portable.zip -Algorithm SHA256
 ```
 
 我的改动记在 [CHANGELOG.md](../CHANGELOG.md)。`docs/upstream-history` 保留原版的历史记录。
@@ -62,7 +62,7 @@ pwsh -File .\build.ps1 -MfcRoot 'C:\Toolchains\atlmfc'
 pwsh -File .\build.ps1 -ExecutableOnly
 ```
 
-脚本构建当前源码的临时副本，使用 `Release (lite)|x64`、静态 MFC/CRT 和 `asInvoker`。源码、构建和输出目录分离，已存在的输出目录会被拒绝；源码不被改写。源码 ZIP 也可构建。输出 JSON 给出 EXE 和证据路径；构建目录中的 `SOURCE-INPUTS.json`、`STAGED-INPUTS.json`、`BUILD-MANIFEST.json`、`build.log` 记录实际输入和产物。发布包中的 `BUILD-INFO.json` 与 `SOURCE-INPUTS.json` 提供不含本机绝对路径的构建信息。
+脚本构建当前源码的临时副本，使用 `Release (lite)|x64`、静态 MFC/CRT 和 `requireAdministrator`。源码、构建和输出目录分离，已存在的输出目录会被拒绝；源码不被改写。源码 ZIP 也可构建。输出 JSON 给出 EXE 和证据路径；构建目录中的 `SOURCE-INPUTS.json`、`STAGED-INPUTS.json`、`BUILD-MANIFEST.json`、`build.log` 记录实际输入和产物。发布包中的 `BUILD-INFO.json` 与 `SOURCE-INPUTS.json` 提供不含本机绝对路径的构建信息。
 
 ## 许可与反馈
 

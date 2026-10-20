@@ -14,7 +14,7 @@
 
 鼠标在任务栏网速或悬浮窗上停留约 400 毫秒，查看前 8 名进程的 PID、下载/上传速度和采集开始后的累计流量。托盘图标只显示简短提示；关闭窗口的提示开关也会关闭排行榜。
 
-新便携包默认不会自动申请管理员授权。权限不足时，点击明细中的允许统计入口，由 Windows 授权独立采集进程；取消不影响普通网速显示。若自行修改 `config.ini`，`[general]` 中 `show_process_traffic=false` 关闭明细，`auto_elevate_process_traffic=false` 仅允许手动请求权限。已有安装只替换 EXE 会保留原设置。
+程序启动时请求管理员权限，按 Windows UAC 提示确认一次；取消则不启动程序。正常情况下在主进程内采集，无需再次授权采集器。`config.ini` 的 `[general]` 中 `show_process_traffic=false` 关闭明细；`auto_elevate_process_traffic` 保留兼容，不控制启动 UAC。已有安装只替换 EXE 会保留原设置。
 
 明细覆盖本机所有 TCP/UDP、IPv4/IPv6，与主窗口所选网卡统计不同；程序启动之前或采集开始前的流量不计入。新连接可能需要一个刷新周期才出现。采集不保存地址、包内容或 ETL 文件；退出主程序时停止采集。
 
@@ -40,7 +40,7 @@
 
 ## 开机自动运行失效
 
-Lite 在当前用户的 `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run` 中保存启动项。移动程序后，取消并重新勾选“开机自动运行”，更新程序路径。无需将程序设置为管理员运行。
+Lite 仍在当前用户的 `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run` 中保存启动项。该方式不保证管理员 EXE 自动启动，当前版本尚未验证开机自启。可手动启动并确认 UAC；本次未新增计划任务或改变 UAC 设置。移动程序后，原启动项路径也需更新。
 
 ## 无法保存设置或重启后设置丢失
 
