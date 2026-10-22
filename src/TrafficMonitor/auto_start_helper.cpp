@@ -5,7 +5,6 @@
 
 #include <comdef.h>
 #include <taskschd.h>
-#include "SimpleXML.h"
 # pragma comment(lib, "taskschd.lib")
 
 // Helper macros from wix.
@@ -36,6 +35,7 @@ const DWORD USERNAME_LEN = UNLEN + 1; // User Name + '\0'
 bool create_auto_start_task_for_this_user(bool runElevated)
 {
     HRESULT hr = S_OK;
+    DWORD executableLength = 0;
 
     WCHAR username_domain[USERNAME_DOMAIN_LEN];
     WCHAR username[USERNAME_LEN];
@@ -69,7 +69,12 @@ bool create_auto_start_task_for_this_user(bool runElevated)
 
     // Get the executable path passed to the custom action.
     WCHAR wszExecutablePath[MAX_PATH];
-    GetModuleFileName(NULL, wszExecutablePath, MAX_PATH);
+    executableLength = GetModuleFileName(NULL, wszExecutablePath, MAX_PATH);
+    if (executableLength == 0 || executableLength >= MAX_PATH)
+    {
+        hr = HRESULT_FROM_WIN32(executableLength == 0 ? GetLastError() : ERROR_INSUFFICIENT_BUFFER);
+        ExitFunction();
+    }
 
     // ------------------------------------------------------
     // Create an instance of the Task Service.
@@ -89,33 +94,15 @@ bool create_auto_start_task_for_this_user(bool runElevated)
     hr = pService->GetFolder(_bstr_t(L"\\TrafficMonitor"), &pTaskFolder);
     if (FAILED(hr))
     {
+        if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) && hr != HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND))
+            ExitFunction();
         // Folder doesn't exist. Get the Root folder and create the TrafficMonitor subfolder.
         ITaskFolder* pRootFolder = NULL;
         hr = pService->GetFolder(_bstr_t(L"\\"), &pRootFolder);
         ExitOnFailure(hr, "Cannot get Root Folder pointer: %x", hr);
         hr = pRootFolder->CreateFolder(_bstr_t(L"\\TrafficMonitor"), _variant_t(L""), &pTaskFolder);
-        if (FAILED(hr))
-        {
-            pRootFolder->Release();
-            ExitOnFailure(hr, "Cannot create TrafficMonitor task folder: %x", hr);
-        }
-    }
-
-    // If the task exists, just enable it.
-    {
-        IRegisteredTask* pExistingRegisteredTask = NULL;
-        hr = pTaskFolder->GetTask(_bstr_t(wstrTaskName.c_str()), &pExistingRegisteredTask);
-        if (SUCCEEDED(hr))
-        {
-            // Task exists, try enabling it.
-            hr = pExistingRegisteredTask->put_Enabled(VARIANT_TRUE);
-            pExistingRegisteredTask->Release();
-            if (SUCCEEDED(hr))
-            {
-                // Function enable. Sounds like a success.
-                ExitFunction();
-            }
-        }
+        pRootFolder->Release();
+        ExitOnFailure(hr, "Cannot create TrafficMonitor task folder: %x", hr);
     }
 
     // Create the task builder object to create the task.
@@ -229,15 +216,17 @@ bool create_auto_start_task_for_this_user(bool runElevated)
     // ------------------------------------------------------
     //  Save the task in the TrafficMonitor folder.
     {
-        _variant_t SDDL_FULL_ACCESS_FOR_EVERYONE = L"D:(A;;FA;;;WD)";
+        // Task Scheduler adds the current principal's ACE. Other local users
+        // must never be able to rewrite an elevated startup action.
+        _variant_t taskSecurity = L"D:P(A;;FA;;;SY)(A;;FA;;;BA)";
         hr = pTaskFolder->RegisterTaskDefinition(
             _bstr_t(wstrTaskName.c_str()),
             pTask,
-            TASK_CREATE_OR_UPDATE,
+            TASK_CREATE_OR_UPDATE | TASK_IGNORE_REGISTRATION_TRIGGERS,
             _variant_t(username_domain),
             _variant_t(),
             TASK_LOGON_INTERACTIVE_TOKEN,
-            SDDL_FULL_ACCESS_FOR_EVERYONE,
+            taskSecurity,
             &pRegisteredTask);
         ExitOnFailure(hr, "Error saving the Task : %x", hr);
     }
@@ -258,7 +247,8 @@ LExit:
     if (pRegisteredTask)
         pRegisteredTask->Release();
 
-    return (SUCCEEDED(hr));
+    // Positive scheduler warnings can mean that a trigger failed to register.
+    return hr == S_OK;
 }
 
 bool delete_auto_start_task_for_this_user()
@@ -300,8 +290,8 @@ bool delete_auto_start_task_for_this_user()
     hr = pService->GetFolder(_bstr_t(L"\\TrafficMonitor"), &pTaskFolder);
     if (FAILED(hr))
     {
-        // Folder doesn't exist. No need to disable a non-existing task.
-        hr = S_OK;
+        // Only an absent folder counts as successful removal.
+        if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) || hr == HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND)) hr = S_OK;
         ExitFunction();
     }
 
@@ -314,7 +304,9 @@ bool delete_auto_start_task_for_this_user()
         {
             // Task exists, try disabling it.
             hr = pTaskFolder->DeleteTask(_bstr_t(wstrTaskName.c_str()), 0);
+            pExistingRegisteredTask->Release();
         }
+        if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) hr = S_OK;
     }
 
 LExit:
@@ -375,19 +367,43 @@ bool is_auto_start_task_active_for_this_user(std::wstring* path)
         if (SUCCEEDED(hr))
         {
             // Task exists, get its value.
-            VARIANT_BOOL is_enabled;
+            VARIANT_BOOL is_enabled = VARIANT_FALSE;
             hr = pExistingRegisteredTask->get_Enabled(&is_enabled);
-            //判断已存在的任务计划命令的exe文件路径是否为当前exe的路径
-            BSTR xml_buff{};
-            pExistingRegisteredTask->get_Xml(&xml_buff);
-            CSimpleXML xml;
-            xml.LoadXMLContentDirect(xml_buff);
-            std::wstring command_path = xml.GetNode(L"Command", L"Exec");
+            // Use Task Scheduler's typed fields: XML escapes paths containing
+            // '&', and Principal has an id attribute that the old text parser
+            // cannot read. Only the sole elevated interactive action is active.
+            CComPtr<ITaskDefinition> definition;
+            CComPtr<IActionCollection> actions;
+            CComPtr<IAction> action;
+            CComPtr<IExecAction> executable;
+            CComPtr<IPrincipal> principal;
+            CComBSTR command;
+            LONG actionCount = 0;
+            TASK_RUNLEVEL_TYPE runLevel = TASK_RUNLEVEL_LUA;
+            TASK_LOGON_TYPE logonType = TASK_LOGON_NONE;
+            if (SUCCEEDED(hr)) hr = pExistingRegisteredTask->get_Definition(&definition);
+            if (SUCCEEDED(hr)) hr = definition->get_Actions(&actions);
+            if (SUCCEEDED(hr)) hr = actions->get_Count(&actionCount);
+            if (SUCCEEDED(hr) && actionCount != 1) hr = E_FAIL;
+            if (SUCCEEDED(hr)) hr = actions->get_Item(1, &action);
+            if (SUCCEEDED(hr)) hr = action->QueryInterface(IID_IExecAction, reinterpret_cast<void**>(&executable));
+            if (SUCCEEDED(hr)) hr = executable->get_Path(&command);
+            if (SUCCEEDED(hr)) hr = definition->get_Principal(&principal);
+            if (SUCCEEDED(hr)) hr = principal->get_RunLevel(&runLevel);
+            if (SUCCEEDED(hr)) hr = principal->get_LogonType(&logonType);
+            if (FAILED(hr))
+            {
+                pExistingRegisteredTask->Release();
+                ExitFunction();
+            }
+            std::wstring command_path = command ? static_cast<const wchar_t*>(command) : L"";
             if (path != nullptr)
                 *path = command_path;
             WCHAR wszExecutablePath[MAX_PATH];
-            GetModuleFileName(NULL, wszExecutablePath, MAX_PATH);
-            command_path_match = (command_path == wszExecutablePath);
+            const DWORD length = GetModuleFileName(NULL, wszExecutablePath, MAX_PATH);
+            command_path_match = length > 0 && length < MAX_PATH
+                && _wcsicmp(command_path.c_str(), wszExecutablePath) == 0
+                && runLevel == TASK_RUNLEVEL_HIGHEST && logonType == TASK_LOGON_INTERACTIVE_TOKEN;
 
             pExistingRegisteredTask->Release();
             if (SUCCEEDED(hr))

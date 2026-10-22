@@ -249,9 +249,9 @@ BOOL CGeneralSettingsDlg::OnInitDialog()
     bool shortcut_exist = CCommon::FileExist((start_up_path + L"\\TrafficMonitor.lnk").c_str());
     if (shortcut_exist)
     {
-        theApp.SetAutoRun(true);
-        m_data.auto_run = true;
-        DeleteFile((start_up_path + L"\\TrafficMonitor.lnk").c_str());
+        m_data.auto_run = theApp.SetAutoRun(true);
+        if (m_data.auto_run)
+            DeleteFile((start_up_path + L"\\TrafficMonitor.lnk").c_str());
     }
     else
     {
@@ -733,9 +733,7 @@ void CGeneralSettingsDlg::OnBnClickedSelectConnectionsButton()
 
 void CGeneralSettingsDlg::OnBnClickedResetAutoRunButton()
 {
-    //先删除开机自动运行
-    theApp.SetAutoRunByRegistry(false);
-    theApp.SetAutoRunByTaskScheduler(false);
+    // Update in place so a failed registration preserves the previous startup.
     if (!theApp.SetAutoRun(true))    //重新设置开机自动运行
     {
         MessageBox(CCommon::LoadText(IDS_SET_AUTO_RUN_FAILED_WARNING), NULL, MB_ICONWARNING | MB_OK);

@@ -557,59 +557,25 @@ UINT CTrafficMonitorApp::InitOpenHardwareMonitorLibThreadFunc(LPVOID lpParam)
 
 bool  CTrafficMonitorApp::SetAutoRun(bool auto_run)
 {
-    //不含温度监控的版本使用添加注册表项的方式实现开机自启动
-#ifdef WITHOUT_TEMPERATURE
-    return SetAutoRunByRegistry(auto_run);
-#else
-    //包含温度监控的版本使用任务计划的方式实现开机自启动
+    // All editions require elevation; Windows does not elevate Run-key entries.
     return SetAutoRunByTaskScheduler(auto_run);
-#endif
 }
 
 bool CTrafficMonitorApp::GetAutoRun(wstring* auto_run_path)
 {
     if (auto_run_path != nullptr)
         auto_run_path->clear();
-    //不含温度监控的版本使用添加注册表项的方式实现开机自启动
-#ifdef WITHOUT_TEMPERATURE
-    CRegKey key;
-    if (key.Open(HKEY_CURRENT_USER, _T("Software\\Microsoft\\Windows\\CurrentVersion\\Run")) != ERROR_SUCCESS)
-    {
-        //打开注册表“Software\\Microsoft\\Windows\\CurrentVersion\\Run”失败，则返回false
-        return false;
-    }
-    wchar_t buff[256];
-    ULONG size{ 256 };
-    if (key.QueryStringValue(APP_NAME, buff, &size) == ERROR_SUCCESS)       //如果找到了“TrafficMonitor”键
-    {
-        if (auto_run_path != nullptr)
-        {
-            //保存路径
-            *auto_run_path = buff;
-            //去掉前后的引号
-            if (auto_run_path->front() == L'\"')
-                *auto_run_path = auto_run_path->substr(1);
-            if (auto_run_path->back() = L'\"')
-                auto_run_path->pop_back();
-        }
-        return (m_module_path_reg == buff); //如果“TrafficMonitor”的值是当前程序的路径，就返回true，否则返回false
-    }
-    else
-    {
-        return false;       //没有找到“TrafficMonitor”键，返回false
-    }
-#else
-    //包含温度监控的版本使用任务计划的方式实现开机自启动
     return is_auto_start_task_active_for_this_user(auto_run_path);
-#endif
 }
 
 bool CTrafficMonitorApp::SetAutoRunByRegistry(bool auto_run)
 {
     CRegKey key;
     //打开注册表项
-    if (key.Open(HKEY_CURRENT_USER, _T("Software\\Microsoft\\Windows\\CurrentVersion\\Run")) != ERROR_SUCCESS)
+    const LSTATUS opened = key.Open(HKEY_CURRENT_USER, _T("Software\\Microsoft\\Windows\\CurrentVersion\\Run"));
+    if (opened != ERROR_SUCCESS)
     {
+        if (!auto_run && opened == ERROR_FILE_NOT_FOUND) return true;
         AfxMessageBox(CCommon::LoadText(IDS_AUTORUN_FAILED_NO_KEY), MB_OK | MB_ICONWARNING);
         return false;
     }
@@ -629,8 +595,9 @@ bool CTrafficMonitorApp::SetAutoRunByRegistry(bool auto_run)
         //删除前先检查注册表项是否存在，如果不存在，则直接返回
         wchar_t buff[256];
         ULONG size{ 256 };
-        if (key.QueryStringValue(APP_NAME, buff, &size) != ERROR_SUCCESS)
-            return false;
+        const LSTATUS queried = key.QueryStringValue(APP_NAME, buff, &size);
+        if (queried == ERROR_FILE_NOT_FOUND) return true;
+        if (queried != ERROR_SUCCESS) return false;
         if (key.DeleteValue(APP_NAME) != ERROR_SUCCESS)
         {
             AfxMessageBox(CCommon::LoadText(IDS_AUTORUN_DELETE_FAILED), MB_OK | MB_ICONWARNING);
@@ -642,15 +609,16 @@ bool CTrafficMonitorApp::SetAutoRunByRegistry(bool auto_run)
 
 bool CTrafficMonitorApp::SetAutoRunByTaskScheduler(bool auto_run)
 {
-    bool succeed = delete_auto_start_task_for_this_user();     //先删除开机自启动
     if (auto_run)
     {
-        //通过计划任务设置开机自启动项时删除注册表中的自启动项
-        SetAutoRunByRegistry(false);
-
-        succeed = create_auto_start_task_for_this_user(true);
+        // Keep the old task/Run entry if registration fails. Registration updates
+        // the current executable and privilege level without first deleting it.
+        if (!create_auto_start_task_for_this_user(true)) return false;
+        return SetAutoRunByRegistry(false);
     }
-    return succeed;
+    const bool taskRemoved = delete_auto_start_task_for_this_user();
+    const bool legacyRemoved = SetAutoRunByRegistry(false);
+    return taskRemoved && legacyRemoved;
 }
 
 CString CTrafficMonitorApp::GetSystemInfoString()
@@ -1254,8 +1222,8 @@ void CTrafficMonitorApp::OnFrequentyAskedQuestions()
 {
     const bool chinese = m_str_table.GetLanguageInfo().bcp_47.rfind(L"zh", 0) == 0;
     AfxMessageBox(chinese
-        ? L"常见问题\n\n任务栏显示：右键选择“显示任务栏窗口”。\n网速显示：在“网络连接”菜单选择使用的网卡。\n开机自启：现有 Run 启动项不保证管理员程序自动启动，本版尚未验证；可手动启动并确认 UAC。\n配置和皮肤沿用现有本地文件。\n这是我自己维护的个人版，只检查我自己的 GitHub Releases。"
-        : L"Frequently asked questions\n\nTaskbar display: select Show taskbar window in the context menu.\nNetwork speed: select the active adapter in Network connections.\nStartup: the existing Run entry does not guarantee automatic startup of an administrator application. This is unverified for this version; start manually and confirm UAC if needed.\nExisting local settings and skins remain supported.\nThis personal version checks only my own GitHub Releases.",
+        ? L"常见问题\n\n任务栏显示：右键选择“显示任务栏窗口”。\n网速显示：在“网络连接”菜单选择使用的网卡。\n开机自启：在选项中启用后，通过当前用户的登录计划任务启动；旧版 Run 启动项需重新勾选迁移。\n配置和皮肤沿用现有本地文件。\n这是我自己维护的个人版，只检查我自己的 GitHub Releases。"
+        : L"Frequently asked questions\n\nTaskbar display: select Show taskbar window in the context menu.\nNetwork speed: select the active adapter in Network connections.\nStartup: enable this option to use an elevated logon task for the current user. Re-enable the option to migrate an older Run entry.\nExisting local settings and skins remain supported.\nThis personal version checks only my own GitHub Releases.",
         MB_OK | MB_ICONINFORMATION);
 }
 
